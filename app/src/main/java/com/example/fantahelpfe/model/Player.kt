@@ -12,11 +12,8 @@ enum class PlayerRole {
 data class Player (
     val id: Int,
     val name: String,
-    val age: Int?,
-    val injury: Int?,
     val squad: String,
     val role: PlayerRole,
-    val mate: String?,
     val price: Int,
     val rating: Double,
     val regularness: Int,

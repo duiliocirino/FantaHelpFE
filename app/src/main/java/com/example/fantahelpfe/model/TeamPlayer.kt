@@ -4,7 +4,8 @@ import com.squareup.moshi.Json
 
 data class TeamPlayer(
     val playerId: Int,
-    var teamId: Int,
+    val teamId: Int,
     val playerName: String,
-    val auctionPrice: Int
+    val auctionPrice: Int,
+    val playerRole: PlayerRole
 )

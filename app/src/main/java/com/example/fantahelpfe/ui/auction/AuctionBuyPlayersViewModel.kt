@@ -12,7 +12,7 @@ import com.example.fantahelpfe.data.remote.dto.AuctionedPlayerInfo
 import com.example.fantahelpfe.model.League // For league context if needed for LineUp
 import com.example.fantahelpfe.model.Player
 import com.example.fantahelpfe.model.Team
-import com.example.fantahelpfe.utils.YourAppError
+import com.example.fantahelpfe.utils.AppError
 import kotlinx.coroutines.async
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -120,7 +120,7 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                     onTeamSelectedForAssignment(teams.first()) // Auto-select if only one
                 }
 
-            } catch (e: YourAppError) {
+            } catch (e: AppError) {
                 Log.e("AuctionBuyVM", "Error fetching league/teams: ${e.displayMessage}", e.cause)
                 _uiState.update { it.copy(isLoadingTeams = false, generalError = e.displayMessage ?: "Failed to load initial data.") }
             } catch (e: Exception) {
@@ -140,7 +140,7 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                     Log.d("AuctionBuyVM", "Searching players with query: $query for league $currentLeagueId")
                     val players: List<Player> = repository.searchPlayer(currentLeagueId, query)
                     _uiState.update { it.copy(searchResults = players, isSearchingPlayers = false) }
-                } catch (e: YourAppError) {
+                } catch (e: AppError) {
                     Log.e("AuctionBuyVM", "Player search error: ${e.displayMessage}")
                     _uiState.update { it.copy(searchResults = emptyList(), isSearchingPlayers = false, generalError = "Player search failed.") }
                 } catch (e: Exception) {
@@ -268,7 +268,7 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                     )
                 }
 
-            } catch (e: YourAppError) {
+            } catch (e: AppError) {
                 // ... error handling ...
                 Log.e("AuctionBuyVM", "Error calculating score: ${e.displayMessage}")
                 _uiState.update { it.copy(isLoadingConvenienceScore = false, convenienceScoreError = e.displayMessage ?: "Could not calculate score advantage.") }
@@ -327,7 +327,7 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                 // Potentially remove player from 'available players' list if that's managed client-side
                 // or expect search to no longer return them.
 
-            } catch (e: YourAppError) {
+            } catch (e: AppError) {
                 Log.e("AuctionBuyVM", "Assign player error: ${e.displayMessage}", e.cause)
                 _uiState.update { it.copy(assignmentStatus = ActionStatus.Idle, assignmentError = e.displayMessage ?: "Failed to assign player") }
             } catch (e: Exception) {

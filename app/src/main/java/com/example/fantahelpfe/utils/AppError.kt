@@ -7,60 +7,42 @@ package com.example.fantahelpfe.utils
  * A sealed class representing different types of errors that can occur within the application,
  * particularly from the data layer (Repository).
  */
-sealed class YourAppError(
-    open val displayMessage: String? = null, // A user-friendly message, potentially from a string resource
-    override val cause: Throwable? = null       // The original exception, useful for logging
+sealed class AppError(
+    open val displayMessage: String? = null,
+    override val cause: Throwable? = null
 ) : Exception(displayMessage, cause) {
 
-    /**
-     * Represents network-related errors (e.g., no internet connection, DNS resolution failure).
-     */
     data class NetworkError(
         override val displayMessage: String = "Network connection unavailable. Please check your internet.",
         override val cause: Throwable? = null
-    ) : YourAppError(displayMessage, cause)
+    ) : AppError(displayMessage, cause)
 
-    /**
-     * Represents errors returned by the server/API (e.g., HTTP 4xx, 5xx errors).
-     */
     data class ApiError(
-        val statusCode: Int?, // HTTP status code, if applicable
-        val apiErrorMessage: String?, // Message directly from the API response body, if any
+        val statusCode: Int?,
+        val apiErrorMessage: String?,
         override val displayMessage: String = apiErrorMessage ?: "An error occurred with the server.",
         override val cause: Throwable? = null
-    ) : YourAppError(displayMessage, cause)
+    ) : AppError(displayMessage, cause)
 
-    /**
-     * Represents an error when a requested resource was not found (typically HTTP 404).
-     */
     data class NotFoundError(
         override val displayMessage: String = "The requested item could not be found.",
         override val cause: Throwable? = null
-    ) : YourAppError(displayMessage, cause)
+    ) : AppError(displayMessage, cause)
 
-    /**
-     * Represents an authorization or authentication error (typically HTTP 401 or 403).
-     */
     data class AuthorizationError(
         override val displayMessage: String = "You are not authorized to perform this action.",
         override val cause: Throwable? = null
-    ) : YourAppError(displayMessage, cause)
+    ) : AppError(displayMessage, cause)
 
-    /**
-     * Represents an error during data parsing or mapping (e.g., unexpected JSON format).
-     */
     data class DataMappingError(
         override val displayMessage: String = "There was an issue processing the data.",
         override val cause: Throwable? = null
-    ) : YourAppError(displayMessage, cause)
+    ) : AppError(displayMessage, cause)
 
-    /**
-     * A generic error for cases not covered by more specific types.
-     */
     data class UnknownError(
         override val displayMessage: String = "An unexpected error occurred.",
         override val cause: Throwable? = null
-    ) : YourAppError(displayMessage, cause)
+    ) : AppError(displayMessage, cause)
 
     // --- You can add more specific error types as needed ---
     // e.g., DatabaseError, UserInputValidationError (if handled at this layer)

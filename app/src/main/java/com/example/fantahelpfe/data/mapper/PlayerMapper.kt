@@ -11,7 +11,6 @@ fun PlayerReadDto.toDomain(): Player {
     return Player(
         id = this.id,
         name = this.name, // Provide a default if name can be null from API
-        age = 25, // TODO: correct once there
         squad = this.squad,
         role = when (this.role.uppercase()) {
             "P" -> PlayerRole.P
@@ -21,14 +20,12 @@ fun PlayerReadDto.toDomain(): Player {
             else -> PlayerRole.UNKNOWN
         },
         price = this.price,
-        injury = 3, // TODO: correct once there
         rating = this.rating,
         regularness = this.regularness,
         fvm = this.fvm,
         expectedPerformance = this.expectedPerformance,
         expectedStd = this.expectedStd,
         expectedPrice = this.expectedPrice,
-        mate = null,
     )
 }
 

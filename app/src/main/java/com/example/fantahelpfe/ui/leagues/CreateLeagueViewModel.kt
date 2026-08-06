@@ -9,7 +9,7 @@ import com.example.fantahelpfe.data.remote.dto.create.LeagueCreateDto
 import com.example.fantahelpfe.data.remote.dto.create.TeamCreateDto
 import com.example.fantahelpfe.model.League
 import com.example.fantahelpfe.model.Team
-import com.example.fantahelpfe.utils.YourAppError
+import com.example.fantahelpfe.utils.AppError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -204,7 +204,7 @@ class CreateLeagueViewModel @Inject constructor(
                                 val newTeam = repository.createTeam(teamCreateDto)
                                 Log.d("ViewModel", "Team '${newTeam.name}' (ID: ${newTeam.id}) created successfully.")
                                 newTeam // Return the created team
-                            } catch (teamError: YourAppError) {
+                            } catch (teamError: AppError) {
                                 Log.e("ViewModel", "Failed to create team '${draft.name}': ${teamError.getDetailedMessage()}")
                                 // Update the specific draft with its error
                                 _uiState.update { current ->
@@ -287,7 +287,7 @@ class CreateLeagueViewModel @Inject constructor(
                     }
                 }
 
-            } catch (leagueError: YourAppError) {
+            } catch (leagueError: AppError) {
                 Log.e("ViewModel", "Failed to create league: ${leagueError.getDetailedMessage()}", leagueError)
                 _uiState.update {
                     it.copy(

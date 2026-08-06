@@ -4,5 +4,6 @@ data class League (
     val id: Int,
     val name: String,
     val initialBudget: Int,
-    val teams: List<Team>
+    val teams: List<Team>,
+    val goalBonusPerRole: Map<PlayerRole, Int>
 )

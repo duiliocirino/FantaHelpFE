@@ -45,7 +45,7 @@ object AppModule {
             .build()
 
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:60001/")
+            .baseUrl(com.example.fantahelpfe.BuildConfig.BASE_URL)
             .client(okHttpClient) // <-- Use the configured OkHttpClient
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
@@ -63,8 +63,6 @@ object AppModule {
     fun provideUserPreferencesRepository(
         @ApplicationContext context: Context
     ): UserPreferencesRepository {
-        // Assuming UserPreferencesRepository takes a DataStore<Preferences>
-        // Adjust the constructor call based on your UserPreferencesRepository implementation
-        return UserPreferencesRepositoryImpl()
+        return UserPreferencesRepositoryImpl(context)
     }
 }

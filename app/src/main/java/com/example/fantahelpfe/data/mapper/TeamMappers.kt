@@ -8,6 +8,7 @@ fun TeamReadDto.toDomain(): Team {
         id = this.id,
         name = this.name,
         leagueId = this.leagueId,
+        ownerId = this.ownerId,
         remainingBudget = this.remainingBudget,
         players = this.players.map { it.toDomain() }
     )

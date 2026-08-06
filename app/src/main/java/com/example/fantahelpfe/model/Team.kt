@@ -6,6 +6,7 @@ import com.squareup.moshi.Json
 data class Team(
     val id: Int,
     val leagueId: Int,
+    val ownerId: Int,
     val name: String,
     val remainingBudget: Int,
     val players: List<TeamPlayer>
