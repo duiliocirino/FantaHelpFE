@@ -9,6 +9,7 @@ import com.example.fantahelpfe.data.remote.dto.read.LeagueReadDto
 import com.example.fantahelpfe.data.remote.dto.read.PlayerReadDto
 import com.example.fantahelpfe.data.remote.dto.read.TeamReadDto
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -48,8 +49,15 @@ interface ApiService {
     @GET("api/teams/{id}")
     suspend fun getTeam(@Path("id") teamId: Int): TeamReadDto
 
-    // You will add all your other endpoints here later
-    // For example:
-    // @POST("api/teams/{id}/players")
-    // suspend fun addPlayerToTeam(@Path("id") teamId: Int, @Body body: AddPlayerRequestDto): TeamDto
+    @DELETE("api/teams/{teamId}/players/{playerId}")
+    suspend fun removePlayerFromTeam(@Path("teamId") teamId: Int, @Path("playerId") playerId: Int): TeamReadDto
+
+    @DELETE("api/teams/{id}")
+    suspend fun deleteTeam(@Path("id") teamId: Int): Unit
+
+    @DELETE("api/leagues/{leagueId}")
+    suspend fun deleteLeague(@Path("leagueId") leagueId: Int): Unit
+
+    @GET("api/leagues/{leagueId}/teams")
+    suspend fun getTeamsFromLeague(@Path("leagueId") leagueId: Int): List<TeamReadDto>
 }
