@@ -11,7 +11,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.fantahelpfe.ui.auction.AuctionBuyPlayersViewModel
-import com.example.fantahelpfe.ui.auction.AuctionScreen
+import com.example.fantahelpfe.ui.auction.AuctionFlowScreen
 import com.example.fantahelpfe.ui.auction.AuctionBuyPlayersScreen
 import com.example.fantahelpfe.ui.auction.AuctionSettingsScreen
 import com.example.fantahelpfe.ui.auction.AuctionSharedViewModel
@@ -46,16 +46,14 @@ fun AppNavigation() {
             // The route for this entire nested graph. It includes the leagueId argument.
             route = Screen.AuctionFlow.route,
             // The starting screen *within* this auction graph.
-            startDestination = Screen.AuctionBuyPlayers.route,
+            startDestination = Screen.AuctionFlowMain.route,
             arguments = listOf(navArgument(Screen.AuctionFlow.NAV_ARG_LEAGUE_ID) { type = NavType.IntType })
         ) {
             // 'this' NavGraphBuilder is now for the "auction_flow_graph"
             // The leagueId from Screen.AuctionFlow.route is available to all composables in this graph
             // via backStackEntry.arguments or more easily via the AuctionSharedViewModel.
 
-            // Composable for the "Buy Players" screen within the auction graph
-            composable(Screen.AuctionBuyPlayers.route) {
-                // Get the shared ViewModel scoped to this nested graph ("auction_flow_graph")
+            composable(Screen.AuctionFlowMain.route) {
                 val sharedViewModel: AuctionSharedViewModel = hiltViewModel(
                     remember { navController.getBackStackEntry(Screen.AuctionFlow.route) } // Use the graph's route
                 )
@@ -68,35 +66,11 @@ fun AppNavigation() {
                     }
                 }
 
-                AuctionBuyPlayersScreen(
-                    navController = navController, // Pass if needed for internal navigation within auction tabs
+                AuctionFlowScreen(
+                    navController = navController,
                     sharedViewModel = sharedViewModel
-                    // AuctionBuyPlayersViewModel is injected via hiltViewModel() inside the screen
                 )
             }
-
-            // Composable for the "Auction Settings" screen within the auction graph
-            composable(Screen.AuctionSettings.route) {
-                val sharedViewModel: AuctionSharedViewModel = hiltViewModel(
-                    remember { navController.getBackStackEntry(Screen.AuctionFlow.route) }
-                )
-                // You might not need to explicitly initialize leagueId here if it's already done
-                // when entering the graph, unless settings screen specifically needs it.
-                AuctionSettingsScreen(sharedViewModel = sharedViewModel)
-            }
-
-            // TODO: Add composable entries for your other 3 auction screens here
-            // They will all share the same AuctionSharedViewModel instance
-            /*
-            composable(Screen.AuctionMyTeam.route) {
-                val sharedViewModel: AuctionSharedViewModel = hiltViewModel(
-                    remember { navController.getBackStackEntry(Screen.AuctionFlow.route) }
-                )
-                AuctionMyTeamScreen(sharedViewModel = sharedViewModel, ...)
-            }
-            composable(Screen.AuctionMarket.route) { ... }
-            composable(Screen.AuctionLiveBids.route) { ... }
-            */
         }
 
         composable(
