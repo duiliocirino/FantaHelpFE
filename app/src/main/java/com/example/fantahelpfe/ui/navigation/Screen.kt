@@ -8,6 +8,8 @@ sealed class Screen(val route: String) {
         const val NAV_ARG_LEAGUE_ID = "leagueId" // For consistency
         fun createRoute(leagueId: Int) = "auction_flow/$leagueId"
     }
+    data object AuctionMyTeam : Screen("auction_my_team")
+    data object AuctionMarket : Screen("auction_market")
     data object AuctionBuyPlayers : Screen("auction_buy_players")
     data object AuctionSettings : Screen("auction_settings")
     data object LeagueTeams : Screen("league_teams_screen/{leagueId}") {
