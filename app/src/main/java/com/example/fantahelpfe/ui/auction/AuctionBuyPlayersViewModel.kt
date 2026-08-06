@@ -70,6 +70,7 @@ sealed interface ActionStatus {
 @HiltViewModel
 class AuctionBuyPlayersViewModel @Inject constructor(
     private val repository: DataRepository,
+    private val sharedViewModel: AuctionSharedViewModel,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -84,6 +85,13 @@ class AuctionBuyPlayersViewModel @Inject constructor(
     init {
         Log.d("AuctionBuyVM", "Initializing for league ID: $currentLeagueId")
         fetchLeagueDetailsAndTeams() // Fetch league to get LineUp, then teams
+
+        // Observe shared refresh events
+        viewModelScope.launch {
+            sharedViewModel.refreshEvent.collect {
+                refreshAll()
+            }
+        }
 
         // Observe shared settings and UI state to trigger convenience score calculation
         viewModelScope.launch {
@@ -113,6 +121,14 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                     clearConvenienceScores()
                 }
             }
+        }
+    }
+
+    fun refreshAll() {
+        fetchLeagueDetailsAndTeams()
+        val team = _uiState.value.selectedTeamForAssignment
+        if (team != null) {
+            fetchCurrentRosterForSelectedTeam(team.id)
         }
     }
 
@@ -336,6 +352,7 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                 // After successful assignment:
                 // 1. Update the local roster for the team for next suggestion
                 fetchCurrentRosterForSelectedTeam(team.id) // This will re-trigger convenience score if conditions met
+                sharedViewModel.refreshAll()
                 // 2. Clear selection
                 _uiState.update { it.copy(
                     selectedPlayer = null,
@@ -365,8 +382,4 @@ class AuctionBuyPlayersViewModel @Inject constructor(
     fun resetAssignmentStatus() {
         _uiState.update { it.copy(assignmentStatus = ActionStatus.Idle) }
     }
-}
-
-
-    )
 }
