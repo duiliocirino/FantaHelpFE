@@ -1,10 +1,10 @@
 package com.example.fantahelpfe.data
 
 import com.example.fantahelpfe.ui.auction.AuctionSettings
+import kotlinx.coroutines.flow.Flow
 
 interface UserPreferencesRepository {
-    // Option 1: Expose a Flow (recommended)
-    // val auctionSettingsFlow: StateFlow<AuctionSettings>
+    val auctionSettingsFlow: Flow<AuctionSettings>
 
     // Option 2: Simple suspend functions (as used in VM init above for simplicity)
     suspend fun loadAuctionSettings(): AuctionSettings

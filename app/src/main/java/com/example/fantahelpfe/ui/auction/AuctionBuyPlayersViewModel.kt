@@ -20,6 +20,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -84,15 +85,35 @@ class AuctionBuyPlayersViewModel @Inject constructor(
         Log.d("AuctionBuyVM", "Initializing for league ID: $currentLeagueId")
         fetchLeagueDetailsAndTeams() // Fetch league to get LineUp, then teams
 
-        // The observer will now need to be triggered from the Composable,
-        // or this ViewModel needs to combine its state with the shared state.
-        // For now, let's keep the observer, but it will be slightly less direct
-        // as shared settings are external.
-        // A better approach might be to have the Composable call calculateConvenienceScore
-        // with all necessary parameters (including shared ones).
-
-        // Let's modify observeRelevantStateForConvenienceScore to NOT directly call calculate.
-        // Instead, the Composable will observe shared state and this state, and call the calculate function.
+        // Observe shared settings and UI state to trigger convenience score calculation
+        viewModelScope.launch {
+            combine(
+                _uiState,
+                userPreferencesRepository.auctionSettingsFlow
+            ) { state, settings ->
+                // Create a trigger object that contains all necessary values
+                Triple(state, settings, state.selectedPlayer)
+            }
+            .debounce(300)
+            .distinctUntilChanged()
+            .collect { (state, settings, player) ->
+                val team = state.selectedTeamForAssignment
+                val bid = state.currentBidAmount
+                
+                if (player != null && team != null && bid > 0) {
+                    calculateConvenienceScore(
+                        playerToConsider = player,
+                        bidForPlayer = bid,
+                        teamForContext = team,
+                        lineUp = settings.lineUp,
+                        globalFavoritePlayerIds = settings.globalFavoritePlayerIds,
+                        creditsDistributionMultiplier = settings.creditsDistributionMultiplier
+                    )
+                } else if (player != null || team != null) {
+                    clearConvenienceScores()
+                }
+            }
+        }
     }
 
     private fun fetchLeagueDetailsAndTeams() {
@@ -105,10 +126,9 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoadingTeams = false, generalError = "Failed to load league details.") }
                     return@launch
                 }
-                // TODO: Extract LineUp from 'league' domain model or have a separate call
-                // For now, let's assume a dummy/default LineUp or that it's part of League model
-                val actualLineUp = league.getLineUp() // Hypothetical method on League domain model
-                _uiState.update { it.copy(leagueDetails = league, lineUpForSuggestion = actualLineUp) }
+                // Use the LineUp from sharedViewModel if available, otherwise use a default
+                // This will be handled in the Composable via sharedViewModel.settings.value.lineUp
+                _uiState.update { it.copy(leagueDetails = league) }
 
                 // 2. Fetch Teams (e.g., user's teams in this league)
                 // This might depend on the logged-in user or be all teams if admin view
@@ -301,6 +321,11 @@ class AuctionBuyPlayersViewModel @Inject constructor(
             return
         }
 
+        if (team.remainingBudget < bid) {
+            _uiState.update { it.copy(assignmentError = "Insufficient budget! Team ${team.name} only has ${team.remainingBudget} CR remaining.") }
+            return
+        }
+
         _uiState.update { it.copy(assignmentStatus = ActionStatus.Loading, assignmentError = null) }
         viewModelScope.launch {
             try {
@@ -343,13 +368,5 @@ class AuctionBuyPlayersViewModel @Inject constructor(
 }
 
 
-// --- Dummy/Placeholder for League Domain Model method ---
-// You need to define how LineUp is stored/accessed for your League
-fun League.getLineUp(): LineUp {
-    // TODO: Implement logic to get LineUp based on league rules.
-    // This could be a fixed value, or part of the League object from the API.
-    // For now, returning a default. Replace this!
-    return LineUp(
-        keepers = 1, defenders = 4, midfielders = 3, attackers = 3
     )
 }

@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fantahelpfe.data.UserPreferencesRepository // You'll need this for persistence
+import com.example.fantahelpfe.data.remote.dto.LineUp
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,7 +17,8 @@ import javax.inject.Inject
 
 data class AuctionSettings(
     val globalFavoritePlayerIds: List<Int> = emptyList(),
-    val creditsDistributionMultiplier: Int = 1 // Default
+    val creditsDistributionMultiplier: Int = 1, // Default
+    val lineUp: LineUp = LineUp(defenders = 4, midfielders = 3, attackers = 3)
 )
 
 @HiltViewModel
@@ -95,6 +97,13 @@ class AuctionSharedViewModel @Inject constructor(
 
     fun updateCreditsDistributionMultiplier(multiplier: Int) {
         _settings.update { it.copy(creditsDistributionMultiplier = multiplier.coerceAtLeast(1)) }
+        viewModelScope.launch {
+            userPreferencesRepository.saveAuctionSettings(_settings.value)
+        }
+    }
+
+    fun updateLineUp(lineUp: LineUp) {
+        _settings.update { it.copy(lineUp = lineUp) }
         viewModelScope.launch {
             userPreferencesRepository.saveAuctionSettings(_settings.value)
         }

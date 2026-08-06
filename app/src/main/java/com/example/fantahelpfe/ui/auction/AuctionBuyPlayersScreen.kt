@@ -52,46 +52,7 @@ fun AuctionBuyPlayersScreen(
         }
     }
 
-    // --- LaunchedEffect to Trigger Convenience Score Calculation ---
-    LaunchedEffect(
-        uiState.selectedPlayer,
-        uiState.selectedTeamForAssignment,
-        uiState.lineUpForSuggestion,
-        uiState.currentBidAmount,
-        auctionSettings.globalFavoritePlayerIds, // From sharedViewModel
-        auctionSettings.creditsDistributionMultiplier  // From sharedViewModel
-    ) {
-        val player = uiState.selectedPlayer
-        val team = uiState.selectedTeamForAssignment
-        val lineup = uiState.lineUpForSuggestion
-        val bid = uiState.currentBidAmount
-
-        // Only proceed if all necessary data is available
-        if (player != null && team != null && lineup != null) {
-            if (bid > 0) {
-                // Apply a small debounce to avoid rapid firing if multiple states change quickly
-                // (e.g., user typing bid amount AND shared settings changing)
-                // This could also be handled by debouncing individual state flows within the VM
-                // if they were all combined there.
-                delay(300) // Small debounce directly in LaunchedEffect
-
-                buyPlayersViewModel.calculateConvenienceScore(
-                    playerToConsider = player,
-                    bidForPlayer = bid,
-                    teamForContext = team,
-                    lineUp = lineup,
-                    globalFavoritePlayerIds = auctionSettings.globalFavoritePlayerIds,
-                    creditsDistributionMultiplier = auctionSettings.creditsDistributionMultiplier
-                )
-            } else {
-                // If player is selected but bid is invalid, clear previous scores
-                buyPlayersViewModel.clearConvenienceScores()
-            }
-        } else {
-            // If essential selection (player, team, or lineup) is missing, clear scores
-            buyPlayersViewModel.clearConvenienceScores()
-        }
-    }
+    // --- Main UI Column ---
 
 
     // --- Main UI Column ---

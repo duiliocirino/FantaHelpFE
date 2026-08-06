@@ -29,6 +29,7 @@ class DataRepositoryImpl @Inject constructor(
     // 'private set' means only this class can change the list.
     private var playerCache: List<Player>? = null
     private var leaguesCache: List<League>? = null
+    private val availablePlayersCache = mutableMapOf<Int, List<Player>>()
 
     override suspend fun getAllPlayers(): List<Player> {
         if (playerCache != null) {
@@ -97,10 +98,10 @@ class DataRepositoryImpl @Inject constructor(
     }
 
     override suspend fun searchPlayer(currentLeagueId: Int, query: String): List<Player> {
-        if (playerCache == null) {
-            playerCache = getAllPlayers()
+        val availablePlayers = availablePlayersCache.getOrPut(currentLeagueId) {
+            getAvailablePlayersForLeague(currentLeagueId)
         }
-        return playerCache!!.filter { it.name.contains(query, ignoreCase = true) }
+        return availablePlayers.filter { it.name.contains(query, ignoreCase = true) }
     }
 
     override suspend fun assignPlayerToTeam(teamId: Int, playerId: Int, bid: Int): Team {
@@ -116,6 +117,12 @@ class DataRepositoryImpl @Inject constructor(
             val team = apiService.getTeam(teamId).toDomain()
             team.players
         }
+    }
+
+    override fun clearCache() {
+        playerCache = null
+        leaguesCache = null
+        availablePlayersCache.clear()
     }
 
     private suspend fun <T> safeApiCall(call: suspend () -> T): T {

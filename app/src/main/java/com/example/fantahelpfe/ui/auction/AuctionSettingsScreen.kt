@@ -44,9 +44,22 @@ fun AuctionSettingsScreen(
     var multiplierInput by remember { mutableStateOf(settings.creditsDistributionMultiplier.toString()) }
     var favoritePlayerIdInput by remember { mutableStateOf("") } // For adding new fav player ID
 
-    // Update multiplierInput when settings change from VM
+    // LineUp inputs
+    var keepersInput by remember { mutableStateOf(settings.lineUp.keepers.toString()) }
+    var defendersInput by remember { mutableStateOf(settings.lineUp.defenders.toString()) }
+    var midfieldersInput by remember { mutableStateOf(settings.lineUp.midfielders.toString()) }
+    var attackersInput by remember { mutableStateOf(settings.lineUp.attackers.toString()) }
+
+    // Update inputs when settings change from VM
     LaunchedEffect(settings.creditsDistributionMultiplier) {
         multiplierInput = settings.creditsDistributionMultiplier.toString()
+    }
+
+    LaunchedEffect(settings.lineUp) {
+        keepersInput = settings.lineUp.keepers.toString()
+        defendersInput = settings.lineUp.defenders.toString()
+        midfieldersInput = settings.lineUp.midfielders.toString()
+        attackersInput = settings.lineUp.attackers.toString()
     }
 
     Scaffold(topBar = { TopAppBar(title = { Text("Auction Settings") }) }) { paddingValues ->
@@ -70,6 +83,62 @@ fun AuctionSettingsScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text("LineUp Configuration", style = MaterialTheme.typography.titleMedium)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = keepersInput,
+                    onValueChange = {
+                        keepersInput = it
+                        it.toIntOrNull()?.let { num ->
+                            sharedViewModel.updateLineUp(settings.lineUp.copy(keepers = num))
+                        }
+                    },
+                    label = { Text("GK") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = defendersInput,
+                    onValueChange = {
+                        defendersInput = it
+                        it.toIntOrNull()?.let { num ->
+                            sharedViewModel.updateLineUp(settings.lineUp.copy(defenders = num))
+                        }
+                    },
+                    label = { Text("DEF") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = midfieldersInput,
+                    onValueChange = {
+                        midfieldersInput = it
+                        it.toIntOrNull()?.let { num ->
+                            sharedViewModel.updateLineUp(settings.lineUp.copy(midfielders = num))
+                        }
+                    },
+                    label = { Text("MID") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = attackersInput,
+                    onValueChange = {
+                        attackersInput = it
+                        it.toIntOrNull()?.let { num ->
+                            sharedViewModel.updateLineUp(settings.lineUp.copy(attackers = num))
+                        }
+                    },
+                    label = { Text("ATT") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f)
+                )
+            }
             Spacer(modifier = Modifier.height(24.dp))
 
             Text("Global Favorite Players", style = MaterialTheme.typography.titleMedium)

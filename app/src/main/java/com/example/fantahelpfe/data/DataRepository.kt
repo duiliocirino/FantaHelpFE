@@ -26,5 +26,6 @@ interface DataRepository {
     suspend fun assignPlayerToTeam(teamId: Int, playerId: Int, bid: Int): Team
     suspend fun getSuggestion(potentialRequest: SuggestionRequest): List<SuggestionResult>
     suspend fun getPlayersForTeam(teamId: Int): List<TeamPlayer>
+    fun clearCache()
 
 }
