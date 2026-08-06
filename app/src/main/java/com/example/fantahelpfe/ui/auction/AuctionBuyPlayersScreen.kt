@@ -69,9 +69,10 @@ fun AuctionBuyPlayersScreen(
                     .padding(bottom = 8.dp)
             )
         }
-        if (uiState.lineUpForSuggestion == null && uiState.leagueDetails == null && !uiState.isLoadingTeams) {
+        if (uiState.leagueDetails == null && !uiState.isLoadingTeams) {
             Text(
-                "Loading league configuration...",
+                "Failed to load league details.",
+                color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
@@ -267,7 +268,7 @@ fun AuctionBuyPlayersScreen(
         }
 
         // --- Convenience Score Display ---
-        if (uiState.selectedPlayer != null && uiState.currentBidAmount > 0 && uiState.selectedTeamForAssignment != null && uiState.lineUpForSuggestion != null) {
+        if (uiState.selectedPlayer != null && uiState.currentBidAmount > 0 && uiState.selectedTeamForAssignment != null) {
             when {
                 uiState.isLoadingConvenienceScore -> {
                     Row(verticalAlignment = Alignment.CenterVertically) {

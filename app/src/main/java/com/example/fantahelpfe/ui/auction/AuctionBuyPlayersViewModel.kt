@@ -30,25 +30,23 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// --- UI State (mostly the same, added LineUp) ---
 data class AuctionBuyPlayersUiState(
-    val leagueId: Int, // Store leagueId for easy access
-    val leagueDetails: League? = null, // For LineUp or other league rules
+    val leagueId: Int,
+    val leagueDetails: League? = null,
     val searchQuery: String = "",
     val searchResults: List<Player> = emptyList(),
     val isSearchingPlayers: Boolean = false,
     val selectedPlayer: Player? = null,
 
-    val bidAmountInput: String = "1", // Default to 1 to be > 0
+    val bidAmountInput: String = "1",
     val currentBidAmount: Int = 1,
 
-    val teamsInLeague: List<Team> = emptyList(), // User's teams or all teams
+    val teamsInLeague: List<Team> = emptyList(),
     val selectedTeamForAssignment: Team? = null,
     val isLoadingTeams: Boolean = false,
 
     // Convenience Score (Optimal Team Comparison)
-    val lineUpForSuggestion: LineUp? = null, // Crucial for SuggestionRequest
-    val currentRosterIdsForTeam: List<Int> = emptyList(), // IDs of players already on selectedTeamForAssignment
+    val currentRosterIdsForTeam: List<Int> = emptyList(),
 
     val baseOptimalScore: Double? = null,
     val potentialOptimalScore: Double? = null,

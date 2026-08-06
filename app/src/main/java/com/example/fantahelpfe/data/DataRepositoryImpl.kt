@@ -70,7 +70,9 @@ class DataRepositoryImpl @Inject constructor(
     }
 
     override suspend fun removePlayerFromTeam(teamId: Int, playerId: Int): Team {
-        return safeApiCall { apiService.removePlayerFromTeam(teamId, playerId).toDomain() }
+        val result = safeApiCall { apiService.removePlayerFromTeam(teamId, playerId).toDomain() }
+        clearCache()
+        return result
     }
 
     override suspend fun deleteTeam(teamId: Int) {
@@ -105,7 +107,9 @@ class DataRepositoryImpl @Inject constructor(
     }
 
     override suspend fun assignPlayerToTeam(teamId: Int, playerId: Int, bid: Int): Team {
-        return safeApiCall { apiService.addPlayerToTeam(teamId, TeamPlayerCreateDto(playerId, bid)).toDomain() }
+        val result = safeApiCall { apiService.addPlayerToTeam(teamId, TeamPlayerCreateDto(playerId, bid)).toDomain() }
+        clearCache()
+        return result
     }
 
     override suspend fun getSuggestion(potentialRequest: SuggestionRequest): List<SuggestionResult> {
