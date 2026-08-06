@@ -32,7 +32,7 @@ interface ApiService {
     suspend fun createLeague(@Body league: LeagueCreateDto): LeagueReadDto
 
     @POST("api/leagues/{id}/teams/{teamId}")
-    suspend fun addTeamToLeague(@Path("id") leagueId: Int, @Path("teamId") teamId: Int): TeamReadDto
+    suspend fun addTeamToLeague(@Path("id") leagueId: Int, @Path("teamId") teamId: Int): LeagueReadDto
 
     @POST("api/teams")
     suspend fun createTeam(@Body team: TeamCreateDto): TeamReadDto
