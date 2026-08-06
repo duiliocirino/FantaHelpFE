@@ -105,10 +105,7 @@ fun AuctionMarketScreen(
                 ) {
                     items(uiState.filteredPlayers) { player ->
                         MarketPlayerItem(player = player, onBuyClick = {
-                            // In a real app, this would navigate to the Buy tab with the player selected.
-                            // For now, we can just log it or use a snackbar.
-                            // Since we are using a TabRow in AuctionFlowScreen, we might need to 
-                            // communicate this back to the shared ViewModel or via a callback.
+                            sharedViewModel.selectPlayerForBuy(player)
                         })
                     }
                 }

@@ -10,15 +10,7 @@ fun LeagueReadDto.toDomain(): League {
         name = this.name,
         initialBudget = this.initialBudget,
         teams = this.teams.map { it.toDomain() },
-        goalBonusPerRole = this.goalBonusPerRole.mapKeys { (key, _) ->
-            when (key.uppercase()) {
-                "P" -> PlayerRole.P
-                "D" -> PlayerRole.D
-                "C" -> PlayerRole.C
-                "A" -> PlayerRole.A
-                else -> PlayerRole.UNKNOWN
-            }
-        }
+        goalBonusPerRole = this.goalBonusPerRole
     )
 }
 

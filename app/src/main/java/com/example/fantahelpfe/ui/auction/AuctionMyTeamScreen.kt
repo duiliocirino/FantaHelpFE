@@ -1,6 +1,5 @@
 package com.example.fantahelpfe.ui.auction
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,6 +15,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.fantahelpfe.model.TeamPlayer
+import com.example.fantahelpfe.ui.components.ErrorState
+import com.example.fantahelpfe.ui.components.LoadingState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,6 +25,34 @@ fun AuctionMyTeamScreen(
 ) {
     val viewModel: AuctionMyTeamViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
+
+    var removeConfirmationPlayer by remember { mutableStateOf<TeamPlayer?>(null) }
+    val snackbarHostState = rememberSnackbarHostState()
+
+    // Collect snackbar messages from ViewModel
+    LaunchedEffect(Unit) {
+        viewModel.snackbarMessage.collect { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
+    // Confirmation dialog for player removal
+    removeConfirmationPlayer?.let { player ->
+        AlertDialog(
+            onDismissRequest = { removeConfirmationPlayer = null },
+            title = { Text("Remove ${player.playerName}?") },
+            text = { Text("This player will be removed from your team and returned to the available pool.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.removePlayer(player.playerId)
+                    removeConfirmationPlayer = null
+                }) { Text("Remove") }
+            },
+            dismissButton = {
+                TextButton(onClick = { removeConfirmationPlayer = null }) { Text("Cancel") }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -35,24 +64,20 @@ fun AuctionMyTeamScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .padding(paddingValues)
-                .padding(16.dp)
-                .fillMaxSize()
-        ) {
-            if (uiState.isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else if (uiState.error != null) {
-                Text(uiState.error!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.align(Alignment.CenterHorizontally))
-                Button(onClick = { viewModel.loadTeams() }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                    Text("Retry")
-                }
-            } else {
+        if (uiState.isLoading) {
+            LoadingState()
+        } else if (uiState.error != null) {
+            ErrorState(message = uiState.error!!, onRetry = { viewModel.loadTeams() })
+        } else {
+            Column(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .padding(16.dp)
+                    .fillMaxSize()
+            ) {
                 // Team Selector
                 if (uiState.teams.size > 1) {
                     Text("Select Team:", style = MaterialTheme.typography.titleSmall)
@@ -101,7 +126,7 @@ fun AuctionMyTeamScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(team.players) { player ->
-                            PlayerItem(player = player, onRemove = { viewModel.removePlayer(player.playerId) })
+                            PlayerItem(player = player, onRemove = { removeConfirmationPlayer = player })
                         }
                     }
 
@@ -123,7 +148,6 @@ fun AuctionMyTeamScreen(
                     uiState.suggestionResults?.let { results ->
                         Spacer(modifier = Modifier.height(16.dp))
                         Text("Suggestions:", style = MaterialTheme.typography.titleMedium)
-                        // Simple display of the first result's score
                         results.firstOrNull()?.let { result ->
                             Text(
                                 "Projected Total Score: ${String.format("%.1f", result.score.totalScore)}",

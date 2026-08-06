@@ -1,4 +1,3 @@
-// com.example.fantahelpfe.ui.auction.AuctionBuyPlayersScreen.kt
 package com.example.fantahelpfe.ui.auction
 
 import androidx.compose.foundation.clickable
@@ -23,28 +22,29 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel // For hiltViewModel()
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.fantahelpfe.model.Player
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuctionBuyPlayersScreen(
-    // Option 1: Pass NavController to get parent backStackEntry for shared VM
-    navController: NavController, // If you have a nested graph for auction
-    // Option 2: If sharedViewModel is directly injectable to this screen's scope (less common for cross-screen sharing)
-    // buyPlayersViewModel: AuctionBuyPlayersViewModel = hiltViewModel(),
+    navController: NavController,
     sharedViewModel: AuctionSharedViewModel = hiltViewModel()
 ) {
-    // --- ViewModel Injection Strategy ---
-    val buyPlayersViewModel: AuctionBuyPlayersViewModel = hiltViewModel() // Scoped to this screen or its NavHostController
-
+    val buyPlayersViewModel: AuctionBuyPlayersViewModel = hiltViewModel()
     val uiState by buyPlayersViewModel.uiState.collectAsState()
-    val auctionSettings by sharedViewModel.settings.collectAsState() // Observe shared settings
     val focusManager = LocalFocusManager.current
+    val snackbarHostState = rememberSnackbarHostState()
 
-    // --- LaunchedEffect to Reset Assignment Status ---
+    // Collect snackbar messages from ViewModel
+    LaunchedEffect(Unit) {
+        buyPlayersViewModel.snackbarMessage.collect { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
+    // Reset assignment status after success
     LaunchedEffect(uiState.assignmentStatus) {
         if (uiState.assignmentStatus == ActionStatus.Success) {
             delay(2000)
@@ -52,15 +52,13 @@ fun AuctionBuyPlayersScreen(
         }
     }
 
-    // --- Main UI Column ---
-
-
-    // --- Main UI Column ---
-    Column(
-        modifier = Modifier
-            .padding(16.dp)
-            .fillMaxSize()
-    ) {
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+                .padding(16.dp)
+                .fillMaxSize()
+        ) {
         // --- League Name (Optional) ---
         uiState.leagueDetails?.let {
             Text(
@@ -138,14 +136,22 @@ fun AuctionBuyPlayersScreen(
             ) {
                 Column(Modifier.padding(12.dp)) {
                     Text(
-                        "Selected: ${player.name}",
-                        style = MaterialTheme.typography.titleMedium
+                        player.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
                     )
                     Text(
-                        // Assuming 'price' is the correct field on your Player model for its current value
-                        "Role: ${player.role.name.capitalizeFirstLetter()}, Current Price: ${player.price}",
+                        "${player.squad} · ${player.role.name.capitalizeFirstLetter()}",
                         style = MaterialTheme.typography.bodyMedium
                     )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Market: ${player.price} CR", style = MaterialTheme.typography.bodySmall)
+                        Text("Rating: ${String.format("%.1f", player.rating)}", style = MaterialTheme.typography.bodySmall)
+                        Text("Exp. Perf: ${String.format("%.1f", player.expectedPerformance)}", style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
         }
@@ -154,6 +160,19 @@ fun AuctionBuyPlayersScreen(
 
         // --- Bid Amount ---
         if (uiState.selectedPlayer != null) {
+            // Budget display
+            uiState.selectedTeamForAssignment?.let { team ->
+                val budgetColor = if (team.remainingBudget < uiState.currentBidAmount)
+                    MaterialTheme.colorScheme.error
+                else
+                    MaterialTheme.colorScheme.tertiary
+                Text(
+                    "Remaining budget: ${team.remainingBudget} CR",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = budgetColor,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+            }
             Text("Bid Amount:", style = MaterialTheme.typography.titleSmall)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -257,6 +276,9 @@ fun AuctionBuyPlayersScreen(
                             " Calculating score advantage...",
                             modifier = Modifier.padding(start = 8.dp)
                         )
+                        TextButton(onClick = { buyPlayersViewModel.cancelSuggestion() }) {
+                            Text("Cancel")
+                        }
                     }
                 }
                 uiState.convenienceScoreError != null -> {
@@ -354,5 +376,6 @@ fun AuctionBuyPlayersScreen(
                     .align(Alignment.CenterHorizontally)
             )
         }
+    }
     }
 }

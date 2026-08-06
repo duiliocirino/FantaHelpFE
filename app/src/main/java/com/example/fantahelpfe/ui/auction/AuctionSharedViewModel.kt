@@ -7,6 +7,7 @@ import com.example.fantahelpfe.data.DataRepository
 import com.example.fantahelpfe.data.UserPreferencesRepository
 import com.example.fantahelpfe.data.remote.dto.LineUp
 import com.example.fantahelpfe.model.League
+import com.example.fantahelpfe.model.Player
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -124,5 +125,17 @@ class AuctionSharedViewModel @Inject constructor(
         viewModelScope.launch {
             userPreferencesRepository.saveAuctionSettings(_settings.value)
         }
+    }
+
+    // Cross-tab communication: Market "Buy" button selects a player in the Buy tab
+    private val _selectedPlayerForBuy = MutableStateFlow<Player?>(null)
+    val selectedPlayerForBuy: StateFlow<Player?> = _selectedPlayerForBuy.asStateFlow()
+
+    fun selectPlayerForBuy(player: Player) {
+        _selectedPlayerForBuy.value = player
+    }
+
+    fun clearSelectedPlayerForBuy() {
+        _selectedPlayerForBuy.value = null
     }
 }

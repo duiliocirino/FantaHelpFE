@@ -17,14 +17,15 @@ import kotlinx.coroutines.async
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -79,6 +80,9 @@ class AuctionBuyPlayersViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(AuctionBuyPlayersUiState(leagueId = currentLeagueId))
     val uiState: StateFlow<AuctionBuyPlayersUiState> = _uiState.asStateFlow()
 
+    private val _snackbarMessage = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val snackbarMessage: SharedFlow<String> = _snackbarMessage.asSharedFlow()
+
     private var playerSearchJob: Job? = null
     private var convenienceScoreJob: Job? = null
 
@@ -93,21 +97,30 @@ class AuctionBuyPlayersViewModel @Inject constructor(
             }
         }
 
+        // Observe player selection from Market tab
+        viewModelScope.launch {
+            sharedViewModel.selectedPlayerForBuy.collect { player ->
+                if (player != null) {
+                    onPlayerSelectedFromSearch(player)
+                }
+            }
+        }
+
         // Observe shared settings and UI state to trigger convenience score calculation
         viewModelScope.launch {
             combine(
                 _uiState,
-                userPreferencesRepository.auctionSettingsFlow
+                sharedViewModel.settings
             ) { state, settings ->
-                // Create a trigger object that contains all necessary values
-                Triple(state, settings, state.selectedPlayer)
+                Pair(state, settings)
             }
             .debounce(300)
             .distinctUntilChanged()
-            .collect { (state, settings, player) ->
+            .collect { (state, settings) ->
+                val player = state.selectedPlayer
                 val team = state.selectedTeamForAssignment
                 val bid = state.currentBidAmount
-                
+
                 if (player != null && team != null && bid > 0) {
                     calculateConvenienceScore(
                         playerToConsider = player,
@@ -329,7 +342,7 @@ class AuctionBuyPlayersViewModel @Inject constructor(
     fun assignPlayer() {
         val player = _uiState.value.selectedPlayer
         val team = _uiState.value.selectedTeamForAssignment
-        val bid = _uiState.value.currentBidAmount // This bid amount is for the actual assignment API call
+        val bid = _uiState.value.currentBidAmount
         val league = _uiState.value.leagueDetails
 
         if (player == null || team == null || bid <= 0 || league == null) {
@@ -338,48 +351,46 @@ class AuctionBuyPlayersViewModel @Inject constructor(
         }
 
         if (team.remainingBudget < bid) {
-            _uiState.update { it.copy(assignmentError = "Insufficient budget! Team ${team.name} only has ${team.remainingBudget} CR remaining.") }
+            _uiState.update { it.copy(assignmentError = "Insufficient budget! ${team.name} has ${team.remainingBudget} CR remaining.") }
             return
         }
 
         _uiState.update { it.copy(assignmentStatus = ActionStatus.Loading, assignmentError = null) }
         viewModelScope.launch {
             try {
-                // This API call assigns player to team with the actual BID
                 repository.assignPlayerToTeam(team.id, player.id, bid)
-                _uiState.update { it.copy(assignmentStatus = ActionStatus.Success) }
-
-                // After successful assignment:
-                // 1. Update the local roster for the team for next suggestion
-                fetchCurrentRosterForSelectedTeam(team.id) // This will re-trigger convenience score if conditions met
+                fetchCurrentRosterForSelectedTeam(team.id)
                 sharedViewModel.refreshAll()
-                // 2. Clear selection
+                _snackbarMessage.emit("${player.name} assigned to ${team.name} for $bid CR")
                 _uiState.update { it.copy(
+                    assignmentStatus = ActionStatus.Success,
                     selectedPlayer = null,
                     searchQuery = "",
                     bidAmountInput = "1",
                     currentBidAmount = 1,
-                    // Keep selectedTeamForAssignment for next pick or allow user to change
-                    // Reset convenience scores
                     baseOptimalScore = null,
                     potentialOptimalScore = null,
                     convenienceScoreDelta = null,
                     convenienceScoreError = null
                 )}
-                // Potentially remove player from 'available players' list if that's managed client-side
-                // or expect search to no longer return them.
-
             } catch (e: AppError) {
                 Log.e("AuctionBuyVM", "Assign player error: ${e.displayMessage}", e.cause)
-                _uiState.update { it.copy(assignmentStatus = ActionStatus.Idle, assignmentError = e.displayMessage ?: "Failed to assign player") }
+                _uiState.update { it.copy(assignmentStatus = ActionStatus.Idle) }
+                _snackbarMessage.emit(e.displayMessage ?: "Failed to assign player")
             } catch (e: Exception) {
                 Log.e("AuctionBuyVM", "Unexpected assign player error: ${e.message}", e)
-                _uiState.update { it.copy(assignmentStatus = ActionStatus.Idle, assignmentError = "An unexpected error occurred during assignment.") }
+                _uiState.update { it.copy(assignmentStatus = ActionStatus.Idle) }
+                _snackbarMessage.emit("An unexpected error occurred")
             }
         }
     }
 
     fun resetAssignmentStatus() {
         _uiState.update { it.copy(assignmentStatus = ActionStatus.Idle) }
+    }
+
+    fun cancelSuggestion() {
+        convenienceScoreJob?.cancel()
+        _uiState.update { it.copy(isLoadingConvenienceScore = false) }
     }
 }

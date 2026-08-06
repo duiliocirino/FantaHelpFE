@@ -11,8 +11,11 @@ import com.example.fantahelpfe.model.Team
 import com.example.fantahelpfe.model.TeamPlayer
 import com.example.fantahelpfe.utils.AppError
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -35,6 +38,9 @@ class AuctionMyTeamViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(AuctionMyTeamUiState())
     val uiState: StateFlow<AuctionMyTeamUiState> = _uiState.asStateFlow()
+
+    private val _snackbarMessage = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val snackbarMessage: SharedFlow<String> = _snackbarMessage.asSharedFlow()
 
     init {
         loadTeams()
@@ -82,7 +88,7 @@ class AuctionMyTeamViewModel @Inject constructor(
             try {
                 // Re-fetch the team to get the latest budget and players
                 // We use getTeamsFromLeague and find the team, or we could add a getTeamById to repository
-                val teams = repository.getTeamsFromLeague(sharedViewModel.currentLeagueId!!)
+                val teams = repository.getTeamsFromLeague(sharedViewModel.currentLeagueId.value!!)
                 val updatedTeam = teams.find { it.id == team.id }
                 if (updatedTeam != null) {
                     _uiState.update { it.copy(selectedTeam = updatedTeam) }
@@ -95,16 +101,17 @@ class AuctionMyTeamViewModel @Inject constructor(
 
     fun removePlayer(playerId: Int) {
         val team = _uiState.value.selectedTeam ?: return
+        val playerName = _uiState.value.selectedTeam?.players?.find { it.playerId == playerId }?.playerName ?: "Player"
         viewModelScope.launch {
             try {
                 repository.removePlayerFromTeam(team.id, playerId)
-                // Invalidate cache and refresh
                 repository.clearCache()
                 refreshTeam()
+                _snackbarMessage.emit("$playerName removed from ${team.name}")
             } catch (e: AppError) {
-                _uiState.update { it.copy(error = e.displayMessage ?: "Failed to remove player.") }
+                _snackbarMessage.emit(e.displayMessage ?: "Failed to remove player")
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "An unexpected error occurred.") }
+                _snackbarMessage.emit("An unexpected error occurred")
             }
         }
     }
@@ -112,7 +119,7 @@ class AuctionMyTeamViewModel @Inject constructor(
     fun requestSuggestion() {
         val team = _uiState.value.selectedTeam ?: return
         val settings = sharedViewModel.settings.value
-        val leagueId = sharedViewModel.currentLeagueId ?: return
+        val leagueId = sharedViewModel.currentLeagueId.value ?: return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingSuggestion = true, error = null) }
@@ -126,10 +133,13 @@ class AuctionMyTeamViewModel @Inject constructor(
                 )
                 val results = repository.getSuggestion(request)
                 _uiState.update { it.copy(suggestionResults = results, isLoadingSuggestion = false) }
+                _snackbarMessage.emit("Suggestion loaded successfully")
             } catch (e: AppError) {
-                _uiState.update { it.copy(isLoadingSuggestion = false, error = e.displayMessage ?: "Failed to get suggestion.") }
+                _uiState.update { it.copy(isLoadingSuggestion = false) }
+                _snackbarMessage.emit(e.displayMessage ?: "Failed to get suggestion")
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoadingSuggestion = false, error = "An unexpected error occurred.") }
+                _uiState.update { it.copy(isLoadingSuggestion = false) }
+                _snackbarMessage.emit("An unexpected error occurred")
             }
         }
     }

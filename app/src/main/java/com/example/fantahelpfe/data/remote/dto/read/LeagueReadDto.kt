@@ -7,5 +7,5 @@ data class LeagueReadDto(
     @Json(name = "name") val name: String,
     @Json(name = "initialBudget") val initialBudget: Int,
     @Json(name = "teams") val teams: List<TeamReadDto>,
-    @Json(name = "goalBonusPerRole") val goalBonusPerRole: Map<String, Int>
+    @Json(name = "goalBonusPerRole") val goalBonusPerRole: Boolean
 )

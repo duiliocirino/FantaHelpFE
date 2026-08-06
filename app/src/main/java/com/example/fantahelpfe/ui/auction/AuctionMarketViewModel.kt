@@ -37,6 +37,11 @@ class AuctionMarketViewModel @Inject constructor(
 
     init {
         loadAvailablePlayers()
+        viewModelScope.launch {
+            sharedViewModel.refreshEvent.collect {
+                loadAvailablePlayers()
+            }
+        }
     }
 
     fun loadAvailablePlayers() {
