@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.fantahelpfe.utils.capitalizeFirstLetter
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,7 +36,7 @@ fun AuctionBuyPlayersScreen(
     val buyPlayersViewModel: AuctionBuyPlayersViewModel = hiltViewModel()
     val uiState by buyPlayersViewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
-    val snackbarHostState = rememberSnackbarHostState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // Collect snackbar messages from ViewModel
     LaunchedEffect(Unit) {
@@ -124,7 +125,7 @@ fun AuctionBuyPlayersScreen(
                             }
                             .padding(8.dp)
                     )
-                    Divider()
+                    HorizontalDivider()
                 }
             }
         }

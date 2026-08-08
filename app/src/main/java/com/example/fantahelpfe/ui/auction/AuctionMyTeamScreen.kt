@@ -27,7 +27,7 @@ fun AuctionMyTeamScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     var removeConfirmationPlayer by remember { mutableStateOf<TeamPlayer?>(null) }
-    val snackbarHostState = rememberSnackbarHostState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // Collect snackbar messages from ViewModel
     LaunchedEffect(Unit) {

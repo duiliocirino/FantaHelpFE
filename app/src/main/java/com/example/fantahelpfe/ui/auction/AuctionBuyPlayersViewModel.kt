@@ -5,6 +5,8 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.fantahelpfe.data.AuctionSessionManager
+import com.example.fantahelpfe.data.UserPreferencesRepository
 import com.example.fantahelpfe.data.remote.dto.LineUp // Assuming you have this DTO
 import com.example.fantahelpfe.data.remote.dto.SuggestionRequest
 import com.example.fantahelpfe.data.DataRepository
@@ -69,7 +71,7 @@ sealed interface ActionStatus {
 @HiltViewModel
 class AuctionBuyPlayersViewModel @Inject constructor(
     private val repository: DataRepository,
-    private val sharedViewModel: AuctionSharedViewModel,
+    private val auctionSessionManager: AuctionSessionManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -90,14 +92,14 @@ class AuctionBuyPlayersViewModel @Inject constructor(
 
         // Observe shared refresh events
         viewModelScope.launch {
-            sharedViewModel.refreshEvent.collect {
+            auctionSessionManager.refreshEvent.collect {
                 refreshAll()
             }
         }
 
         // Observe player selection from Market tab
         viewModelScope.launch {
-            sharedViewModel.selectedPlayerForBuy.collect { player ->
+            auctionSessionManager.selectedPlayerForBuy.collect { player ->
                 if (player != null) {
                     onPlayerSelectedFromSearch(player)
                 }
@@ -108,7 +110,7 @@ class AuctionBuyPlayersViewModel @Inject constructor(
         viewModelScope.launch {
             combine(
                 _uiState,
-                sharedViewModel.settings
+                auctionSessionManager.settings
             ) { state, settings ->
                 Pair(state, settings)
             }
@@ -358,7 +360,7 @@ class AuctionBuyPlayersViewModel @Inject constructor(
             try {
                 repository.assignPlayerToTeam(team.id, player.id, bid)
                 fetchCurrentRosterForSelectedTeam(team.id)
-                sharedViewModel.refreshAll()
+                auctionSessionManager.refreshAll()
                 _snackbarMessage.emit("${player.name} assigned to ${team.name} for $bid CR")
                 _uiState.update { it.copy(
                     assignmentStatus = ActionStatus.Success,

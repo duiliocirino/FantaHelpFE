@@ -87,7 +87,7 @@ class DataRepositoryImpl @Inject constructor(
         return safeApiCall { apiService.createLeague(league).toDomain() }
     }
 
-    override suspend fun addLeagueToTeam(leagueId: Int, teamId: Int): Team {
+    override suspend fun addLeagueToTeam(leagueId: Int, teamId: Int): League {
         return safeApiCall { apiService.addTeamToLeague(leagueId, teamId).toDomain() }
     }
 

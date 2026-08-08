@@ -3,6 +3,7 @@ package com.example.fantahelpfe.ui.auction
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.fantahelpfe.data.AuctionSessionManager
 import com.example.fantahelpfe.data.DataRepository
 import com.example.fantahelpfe.model.Player
 import com.example.fantahelpfe.utils.AppError
@@ -29,7 +30,7 @@ data class AuctionMarketUiState(
 @HiltViewModel
 class AuctionMarketViewModel @Inject constructor(
     private val repository: DataRepository,
-    private val sharedViewModel: AuctionSharedViewModel
+    private val auctionSessionManager: AuctionSessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuctionMarketUiState())
@@ -38,14 +39,14 @@ class AuctionMarketViewModel @Inject constructor(
     init {
         loadAvailablePlayers()
         viewModelScope.launch {
-            sharedViewModel.refreshEvent.collect {
+            auctionSessionManager.refreshEvent.collect {
                 loadAvailablePlayers()
             }
         }
     }
 
     fun loadAvailablePlayers() {
-        val leagueId = sharedViewModel.currentLeagueId.value
+        val leagueId = auctionSessionManager.currentLeagueId.value
         if (leagueId == null) {
             _uiState.update { it.copy(error = "No league selected.") }
             return

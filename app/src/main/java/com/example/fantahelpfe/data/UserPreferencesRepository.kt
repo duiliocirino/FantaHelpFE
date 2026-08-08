@@ -1,6 +1,5 @@
 package com.example.fantahelpfe.data
 
-import com.example.fantahelpfe.ui.auction.AuctionSettings
 import kotlinx.coroutines.flow.Flow
 
 interface UserPreferencesRepository {

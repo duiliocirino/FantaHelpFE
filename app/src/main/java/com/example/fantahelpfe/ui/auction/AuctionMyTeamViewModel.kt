@@ -3,7 +3,9 @@ package com.example.fantahelpfe.ui.auction
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.fantahelpfe.data.AuctionSessionManager
 import com.example.fantahelpfe.data.DataRepository
+import com.example.fantahelpfe.data.UserPreferencesRepository
 import com.example.fantahelpfe.data.remote.dto.SuggestionRequest
 import com.example.fantahelpfe.data.remote.dto.SuggestionResult
 import com.example.fantahelpfe.model.Player
@@ -33,7 +35,7 @@ data class AuctionMyTeamUiState(
 @HiltViewModel
 class AuctionMyTeamViewModel @Inject constructor(
     private val repository: DataRepository,
-    private val sharedViewModel: AuctionSharedViewModel
+    private val auctionSessionManager: AuctionSessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuctionMyTeamUiState())
@@ -45,14 +47,14 @@ class AuctionMyTeamViewModel @Inject constructor(
     init {
         loadTeams()
         viewModelScope.launch {
-            sharedViewModel.refreshEvent.collect {
+            auctionSessionManager.refreshEvent.collect {
                 refreshTeam()
             }
         }
     }
 
     fun loadTeams() {
-        val leagueId = sharedViewModel.currentLeagueId.value
+        val leagueId = auctionSessionManager.currentLeagueId.value
         if (leagueId == null) {
             _uiState.update { it.copy(error = "No league selected for auction.") }
             return
@@ -88,7 +90,8 @@ class AuctionMyTeamViewModel @Inject constructor(
             try {
                 // Re-fetch the team to get the latest budget and players
                 // We use getTeamsFromLeague and find the team, or we could add a getTeamById to repository
-                val teams = repository.getTeamsFromLeague(sharedViewModel.currentLeagueId.value!!)
+                val leagueId = auctionSessionManager.currentLeagueId.value ?: return@launch
+                val teams = repository.getTeamsFromLeague(leagueId)
                 val updatedTeam = teams.find { it.id == team.id }
                 if (updatedTeam != null) {
                     _uiState.update { it.copy(selectedTeam = updatedTeam) }
@@ -118,12 +121,12 @@ class AuctionMyTeamViewModel @Inject constructor(
 
     fun requestSuggestion() {
         val team = _uiState.value.selectedTeam ?: return
-        val settings = sharedViewModel.settings.value
-        val leagueId = sharedViewModel.currentLeagueId.value ?: return
+        val leagueId = auctionSessionManager.currentLeagueId.value ?: return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingSuggestion = true, error = null) }
             try {
+                val settings = auctionSessionManager.settings.value
                 val request = SuggestionRequest(
                     teamId = team.id,
                     numTeams = 1,
