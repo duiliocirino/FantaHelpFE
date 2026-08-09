@@ -59,7 +59,16 @@ data class AuctionBuyPlayersUiState(
 
     val assignmentStatus: ActionStatus = ActionStatus.Idle,
     val assignmentError: String? = null,
-    val generalError: String? = null
+    val generalError: String? = null,
+    val lastAcquisition: LastAcquisitionInfo? = null
+)
+
+data class LastAcquisitionInfo(
+    val playerId: Int,
+    val playerName: String,
+    val teamId: Int,
+    val teamName: String,
+    val bid: Int
 )
 
 sealed interface ActionStatus {
@@ -350,13 +359,20 @@ class AuctionBuyPlayersViewModel @Inject constructor(
 
         _uiState.update { it.copy(assignmentStatus = ActionStatus.Loading, assignmentError = null) }
         viewModelScope.launch {
-            try {
+                val acquisition = LastAcquisitionInfo(
+                    playerId = player.id,
+                    playerName = player.name,
+                    teamId = team.id,
+                    teamName = team.name,
+                    bid = bid
+                )
                 repository.assignPlayerToTeam(team.id, player.id, bid)
                 fetchCurrentRosterForSelectedTeam(team.id)
                 auctionSessionManager.refreshAll()
                 _snackbarMessage.emit("${player.name} assigned to ${team.name} for $bid CR")
                 _uiState.update { it.copy(
                     assignmentStatus = ActionStatus.Success,
+                    lastAcquisition = acquisition,
                     selectedPlayer = null,
                     searchQuery = "",
                     bidAmountInput = "1",
@@ -374,6 +390,25 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                 Log.e("AuctionBuyVM", "Unexpected assign player error: ${e.message}", e)
                 _uiState.update { it.copy(assignmentStatus = ActionStatus.Idle) }
                 _snackbarMessage.emit("An unexpected error occurred")
+            }
+        }
+    }
+
+    fun undoLastAcquisition() {
+        val acquisition = _uiState.value.lastAcquisition ?: return
+        viewModelScope.launch {
+            try {
+                repository.removePlayerFromTeam(acquisition.teamId, acquisition.playerId)
+                fetchCurrentRosterForSelectedTeam(acquisition.teamId)
+                auctionSessionManager.refreshAll()
+                _snackbarMessage.emit("Undid acquisition: ${acquisition.playerName} removed from ${acquisition.teamName}")
+                _uiState.update { it.copy(lastAcquisition = null) }
+            } catch (e: AppError) {
+                Log.e("AuctionBuyVM", "Undo acquisition error: ${e.displayMessage}", e.cause)
+                _snackbarMessage.emit(e.displayMessage ?: "Failed to undo acquisition")
+            } catch (e: Exception) {
+                Log.e("AuctionBuyVM", "Unexpected undo acquisition error: ${e.message}", e)
+                _snackbarMessage.emit("Failed to undo acquisition")
             }
         }
     }

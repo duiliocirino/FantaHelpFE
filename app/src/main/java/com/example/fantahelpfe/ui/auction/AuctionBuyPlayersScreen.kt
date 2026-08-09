@@ -127,6 +127,57 @@ fun AuctionBuyPlayersScreen(
                     )
                     HorizontalDivider()
                 }
+        if (uiState.selectedPlayer == null && uiState.searchResults.isEmpty()) {
+            uiState.lastAcquisition?.let { last ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Recent Acquisition",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                last.playerName,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "Assigned to ${last.teamName} for ${last.bid} CR",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = { buyPlayersViewModel.undoLastAcquisition() },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = "Undo Acquisition",
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Undo")
+                        }
+                    }
+                }
             }
         }
 
