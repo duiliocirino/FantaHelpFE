@@ -8,6 +8,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -127,6 +128,8 @@ fun AuctionBuyPlayersScreen(
                     )
                     HorizontalDivider()
                 }
+            }
+        }
         if (uiState.selectedPlayer == null && uiState.searchResults.isEmpty()) {
             uiState.lastAcquisition?.let { last ->
                 Card(
@@ -169,7 +172,7 @@ fun AuctionBuyPlayersScreen(
                             )
                         ) {
                             Icon(
-                                Icons.Default.Refresh,
+                                Icons.Filled.Refresh,
                                 contentDescription = "Undo Acquisition",
                                 modifier = Modifier.size(18.dp)
                             )

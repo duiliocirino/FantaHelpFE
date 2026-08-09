@@ -7,11 +7,11 @@ import com.example.fantahelpfe.model.PlayerRole
 
 fun TeamPlayerReadDto.toDomain(): TeamPlayer {
     return TeamPlayer(
-        playerId = this.playerId,
+        playerId = this.effectivePlayerId,
         teamId = this.teamId,
-        playerName = this.playerName,
-        auctionPrice = this.auctionPrice,
-        playerRole = when (this.playerRole.uppercase()) {
+        playerName = this.effectivePlayerName,
+        auctionPrice = this.effectiveAuctionPrice,
+        playerRole = when (this.effectivePlayerRole.uppercase()) {
             "P" -> PlayerRole.P
             "D" -> PlayerRole.D
             "C" -> PlayerRole.C

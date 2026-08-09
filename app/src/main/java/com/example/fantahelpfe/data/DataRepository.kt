@@ -13,6 +13,7 @@ interface DataRepository {
     suspend fun getAllPlayers(): List<Player>
     suspend fun getAllLeagues(): List<League>
     suspend fun getLeagueById(leagueId: Int): League
+    suspend fun getTeamById(teamId: Int): Team
     suspend fun getTeamsForLeague(leagueId: Int): List<Team>
     suspend fun getTeamsFromLeague(leagueId: Int): List<Team>
     suspend fun removePlayerFromTeam(teamId: Int, playerId: Int): Team

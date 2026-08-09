@@ -64,40 +64,47 @@ class AuctionMyTeamViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 val teams = repository.getTeamsFromLeague(leagueId)
-                // For now, we show all teams in the league. 
-                // Later we will filter by ownerId.
                 _uiState.update { it.copy(teams = teams, isLoading = false) }
-                
-                if (teams.isNotEmpty() && _uiState.value.selectedTeam == null) {
-                    selectTeam(teams.first())
+
+                val targetTeamId = _uiState.value.selectedTeam?.id ?: teams.firstOrNull()?.id
+                if (targetTeamId != null) {
+                    val detailedTeam = repository.getTeamById(targetTeamId)
+                    _uiState.update { it.copy(selectedTeam = detailedTeam) }
                 }
             } catch (e: AppError) {
                 _uiState.update { it.copy(isLoading = false, error = e.displayMessage ?: "Failed to load teams.") }
             } catch (e: Exception) {
+                Log.e("AuctionMyTeamVM", "Error loading teams: ${e.message}", e)
                 _uiState.update { it.copy(isLoading = false, error = "An unexpected error occurred.") }
             }
         }
     }
 
     fun selectTeam(team: Team) {
-        _uiState.update { it.copy(selectedTeam = team, suggestionResults = null) }
-        refreshTeam()
+        viewModelScope.launch {
+            try {
+                val detailedTeam = repository.getTeamById(team.id)
+                _uiState.update { it.copy(selectedTeam = detailedTeam, suggestionResults = null) }
+            } catch (e: Exception) {
+                Log.e("AuctionMyTeamVM", "Error selecting team: ${e.message}", e)
+                _uiState.update { it.copy(selectedTeam = team, suggestionResults = null) }
+            }
+        }
     }
 
     fun refreshTeam() {
-        val team = _uiState.value.selectedTeam ?: return
+        val currentLeagueId = auctionSessionManager.currentLeagueId.value ?: return
         viewModelScope.launch {
             try {
-                // Re-fetch the team to get the latest budget and players
-                // We use getTeamsFromLeague and find the team, or we could add a getTeamById to repository
-                val leagueId = auctionSessionManager.currentLeagueId.value ?: return@launch
-                val teams = repository.getTeamsFromLeague(leagueId)
-                val updatedTeam = teams.find { it.id == team.id }
-                if (updatedTeam != null) {
-                    _uiState.update { it.copy(selectedTeam = updatedTeam) }
+                repository.clearCache()
+                val teams = repository.getTeamsFromLeague(currentLeagueId)
+                val targetTeamId = _uiState.value.selectedTeam?.id ?: teams.firstOrNull()?.id
+                if (targetTeamId != null) {
+                    val updatedTeam = repository.getTeamById(targetTeamId)
+                    _uiState.update { it.copy(teams = teams, selectedTeam = updatedTeam) }
                 }
             } catch (e: Exception) {
-                Log.e("AuctionMyTeamVM", "Error refreshing team: ${e.message}")
+                Log.e("AuctionMyTeamVM", "Error refreshing team: ${e.message}", e)
             }
         }
     }

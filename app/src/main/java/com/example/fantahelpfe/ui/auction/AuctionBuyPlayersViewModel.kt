@@ -359,6 +359,7 @@ class AuctionBuyPlayersViewModel @Inject constructor(
 
         _uiState.update { it.copy(assignmentStatus = ActionStatus.Loading, assignmentError = null) }
         viewModelScope.launch {
+            try {
                 val acquisition = LastAcquisitionInfo(
                     playerId = player.id,
                     playerName = player.name,

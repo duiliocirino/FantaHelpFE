@@ -34,6 +34,11 @@ fun AuctionMyTeamScreen(
     // Track active tab within My Team: 0 = Current Roster, 1 = Optimal Suggestion
     var selectedViewMode by remember { mutableIntStateOf(0) }
 
+    // Refresh team data whenever My Team screen enters composition
+    LaunchedEffect(Unit) {
+        viewModel.refreshTeam()
+    }
+
     // Switch to suggestion tab when new suggestions arrive
     LaunchedEffect(uiState.suggestionResults) {
         if (uiState.suggestionResults != null) {

@@ -10,7 +10,7 @@ fun TeamReadDto.toDomain(): Team {
         leagueId = this.leagueId,
         ownerId = this.ownerId,
         remainingBudget = this.remainingBudget,
-        players = this.players.map { it.toDomain() }
+        players = this.allPlayers.map { it.toDomain() }
     )
 }
 
