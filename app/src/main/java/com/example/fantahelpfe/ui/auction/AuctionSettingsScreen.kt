@@ -62,7 +62,7 @@ fun AuctionSettingsScreen(
         attackersInput = settings.lineUp.attackers.toString()
     }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Auction Settings") }) }) { paddingValues ->
+    Scaffold { paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)

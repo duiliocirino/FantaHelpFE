@@ -55,16 +55,6 @@ fun AuctionMyTeamScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("My Team") },
-                actions = {
-                    IconButton(onClick = { viewModel.loadTeams() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh Teams")
-                    }
-                }
-            )
-        },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         if (uiState.isLoading) {
