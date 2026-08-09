@@ -7,5 +7,6 @@ data class SuggestionResult(
     @Json(name = "suggestedPlayers") val suggestedPlayers: List<PlayerReadDto>,
     @Json(name = "totalExpectedPrice") val totalExpectedPrice: Int,
     @Json(name = "totalExpectedPriceStd") val totalExpectedPriceStd: Int,
-    @Json(name = "score") val score: Score
+    @Json(name = "score") val score: Score,
+    @Json(name = "potentialScore") val potentialScore: Score? = null
 )

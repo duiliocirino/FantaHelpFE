@@ -11,8 +11,7 @@ The frontend audit found 3 missing fields in Read DTOs that cause Moshi deserial
 | 1 | `TeamReadDto` missing `OwnerId` | ✅ RESOLVED | BE added `OwnerId` property, mapped from `Team.OwnerId` |
 | 2 | `TeamPlayerReadDto` missing `PlayerRole` | ✅ RESOLVED | BE added `PlayerRole` property, mapped from `TeamPlayer.Player.Role` |
 | 3 | `LeagueReadDto` missing `GoalBonusPerRole` | ✅ RESOLVED | BE added `GoalBonusPerRole` property, mapped from `League.GoalBonusPerRole` |
-| 4 | `SuggestionRequest` missing `AuctionedPlayer` | 🔶 TRACKED | DTO field added and deserialized. Scoring logic to use it in potential score calculation is in the BE backlog. Until then, convenience delta reads zero. |
-| 5 | Convenience Score Single-Call Optimization | 💡 PROPOSED | Optimize `POST /api/teams/getOptimal` when `auctionedPlayer` is present to return `result[0]` (Base) and `result[1]` (Potential) in a single call, cutting server solver calls by 50%. |
+| 4 & 5 | `SuggestionRequest.AuctionedPlayer` & Single-Call Contract | ⏳ IN PROGRESS | Agreed contract: `SuggestionResult` contains `score` (base optimal) and `potentialScore` (`Score?`, potential optimal). Shares heavy DP calculation, reducing CPU load by 50%. Returns `potentialScore = null` if `auctionedPlayer` is null or budget is exceeded. |
 
 ---
 
@@ -57,45 +56,37 @@ public bool GoalBonusPerRole { get; set; }
 
 ---
 
-## Tracked & Proposed (Items 4–5)
+## Agreed Contract (Items 4 & 5) 🤝
 
-### 4. `SuggestionRequest` — Missing `AuctionedPlayer` 🔶
-
-**File**: `Fantahelp.API/Models/Dtos/SuggestionRequest.cs`
-
-The FE sends `auctionedPlayer` (nullable object with `playerId` and `acquisitionPrice`) in the "potential score" convenience-score request. The BE now deserializes this field correctly, but the scoring logic to actually use it in the potential score calculation is tracked in the BE backlog.
-
-**FE-side DTO already present** (`AuctionedPlayerInfo` with `playerId` and `acquisitionPrice`).
-
-**Impact**: Non-blocking. Convenience delta will read zero until the BE implements the scoring logic.
-
----
-
-### 5. Single-Call Optimization for Convenience Score (`POST /api/teams/getOptimal`) 💡
+### 4 & 5. Single-Call Convenience Score Contract (`POST /api/teams/getOptimal`)
 
 **Endpoint**: `POST /api/teams/getOptimal`
 
-**Current Behavior**: To compute the "Convenience Score Delta" (Advantage of buying a player), the FE makes 2 parallel requests to `POST /api/teams/getOptimal`:
-1. `baseRequest` (`auctionedPlayer = null`) -> Base Optimal Score
-2. `potentialRequest` (`auctionedPlayer = { playerId, acquisitionPrice }`) -> Potential Optimal Score
+**Contract Specification**:
+When `auctionedPlayer` is present in `SuggestionRequest`, the backend returns a **single `SuggestionResult` object** containing two score properties:
 
-**Proposed Optimization**:
-When `auctionedPlayer` is present in `SuggestionRequest`, the backend should execute both calculations in a single request context (reusing team data & league rules) and return a 2-element array `[SuggestionResult]`:
-- `result[0]`: **Base Optimal Suggestion** (current roster)
-- `result[1]`: **Potential Optimal Suggestion** (with `auctionedPlayer` acquired)
+```csharp
+public class SuggestionResult
+{
+    public List<PlayerReadDto> SuggestedPlayers { get; set; }
+    public int TotalExpectedPrice { get; set; }
+    public int TotalExpectedPriceStd { get; set; }
+    public Score Score { get; set; } // Base optimal score (current roster only)
+    public Score? PotentialScore { get; set; } // Potential optimal score (with auctioned player)
+}
+```
 
-**Impact & Benefits**:
-- Cuts backend optimization solver CPU execution time by **50%**.
-- Reduces mobile client HTTP roundtrips from 2 to 1.
-- Eliminates duplicate database queries for league rules and available player pools.
+**Key Behaviors**:
+1. **Performance**: Heavy per-role DP tables run **once** and are shared between `Score` and `PotentialScore`. Only the cheap final combination step runs twice, achieving the **50% CPU reduction**.
+2. **`auctionedPlayer == null`**: `PotentialScore` is `null` (standard squad suggestion behavior).
+3. **Budget Exceeded Edge Case**: If `acquisitionPrice > remainingBudget`, `PotentialScore` is set to `null` (signals to FE that the team cannot afford the bid).
 
 ---
 
 ## Impact
 
-Items 1–3 were **hard crashes** on the FE side (Moshi `JsonDataException`) for every league/team/player fetch. Now resolved — the auction flow functions without deserialization errors.
+Items 1–3 were **hard crashes** on the FE side (Moshi `JsonDataException`) for every league/team/player fetch. Now resolved.
 
-Item 4 is non-blocking but makes the convenience score feature return incorrect data (delta always zero) until the BE scoring logic is implemented.
+Items 4 & 5 are currently in progress on the BE. FE DTO (`SuggestionResult.kt`) and ViewModel (`AuctionBuyPlayersViewModel.kt`) are updated with `potentialScore: Score?` to support this unified contract natively with backward compatibility fallback.
 
-Item 5 is a recommended backend performance optimization to halve server load during live auctions.
 

@@ -279,46 +279,34 @@ class AuctionBuyPlayersViewModel @Inject constructor(
             Log.d("AuctionBuyVM", "Calculating convenience score for ${playerToConsider.name} at $bidForPlayer on team ${teamForContext.name} with global favs: $globalFavoritePlayerIds & multiplier: $creditsDistributionMultiplier")
 
             try {
-                // Launch both requests in parallel
-                val baseScoreDeferred = async {
-                    val baseRequest = SuggestionRequest(
-                        teamId = teamForContext.id,
-                        numTeams = 1,
-                        favoritePlayerIds = globalFavoritePlayerIds, // Use global favorites
-                        lineUp = lineUp,
-                        creditsDistribution = creditsDistributionMultiplier // Use global multiplier
+                val potentialRequest = SuggestionRequest(
+                    teamId = teamForContext.id,
+                    numTeams = 1,
+                    favoritePlayerIds = globalFavoritePlayerIds,
+                    lineUp = lineUp,
+                    creditsDistribution = creditsDistributionMultiplier,
+                    auctionedPlayer = AuctionedPlayerInfo(
+                        playerId = playerToConsider.id,
+                        acquisitionPrice = bidForPlayer
                     )
-                    Log.d("AuctionBuyVM", "Base Request: $baseRequest")
-                    val baseResult = repository.getSuggestion(baseRequest).first() // TODO: handle the case for more elements
-                    baseResult.score.totalScore
-                }
+                )
 
-                val potentialScoreDeferred = async {
-                    val potentialRequest = SuggestionRequest(
-                        teamId = teamForContext.id,
-                        numTeams = 1,
-                        favoritePlayerIds = globalFavoritePlayerIds, // Keep global favorites the same
-                        lineUp = lineUp,
-                        creditsDistribution = creditsDistributionMultiplier,
-                        auctionedPlayer = AuctionedPlayerInfo(
-                            playerId = playerToConsider.id,
-                            acquisitionPrice = bidForPlayer
-                        )
-                    )
-                    Log.d("AuctionBuyVM", "Potential Request: $potentialRequest")
-                    val potentialResult = repository.getSuggestion(potentialRequest).first() // TODO: handle the case for more elements
-                    potentialResult.score.totalScore
-                }
+                val results = repository.getSuggestion(potentialRequest)
+                val firstResult = results.firstOrNull()
 
-                // Await results
-                val baseScore = baseScoreDeferred.await()
-                val potentialScore = potentialScoreDeferred.await()
+                val baseScore = firstResult?.score?.totalScore
+                val potentialScore = firstResult?.potentialScore?.totalScore ?: run {
+                    // Fallback: if BE has not populated potentialScore yet, fetch base score separately
+                    val baseRequest = potentialRequest.copy(auctionedPlayer = null)
+                    val baseResult = repository.getSuggestion(baseRequest).firstOrNull()
+                    baseResult?.score?.totalScore
+                }
 
                 _uiState.update {
                     it.copy(
                         baseOptimalScore = baseScore,
                         potentialOptimalScore = potentialScore,
-                        convenienceScoreDelta = potentialScore - baseScore,
+                        convenienceScoreDelta = if (baseScore != null && potentialScore != null) potentialScore - baseScore else 0.0,
                         isLoadingConvenienceScore = false
                     )
                 }
