@@ -55,6 +55,7 @@ class AuctionMyTeamViewModel @Inject constructor(
 
     fun loadTeams() {
         val leagueId = auctionSessionManager.currentLeagueId.value
+        Log.d("AuctionMyTeamVM", "loadTeams called with leagueId=$leagueId")
         if (leagueId == null) {
             _uiState.update { it.copy(error = "No league selected for auction.") }
             return
@@ -64,14 +65,18 @@ class AuctionMyTeamViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 val teams = repository.getTeamsFromLeague(leagueId)
+                Log.d("AuctionMyTeamVM", "getTeamsFromLeague returned ${teams.size} teams: ${teams.map { "${it.name}(id=${it.id})" }}")
                 _uiState.update { it.copy(teams = teams, isLoading = false) }
 
                 val targetTeamId = _uiState.value.selectedTeam?.id ?: teams.firstOrNull()?.id
+                Log.d("AuctionMyTeamVM", "Target team ID to select: $targetTeamId")
                 if (targetTeamId != null) {
-                    val detailedTeam = fetchDetailedTeamWithFallback(targetTeamId)
+                    val detailedTeam = repository.getTeamById(targetTeamId)
+                    Log.d("AuctionMyTeamVM", "Selected detailed team: ${detailedTeam.name} (id=${detailedTeam.id}, players=${detailedTeam.players.size})")
                     _uiState.update { it.copy(selectedTeam = detailedTeam) }
                 }
             } catch (e: AppError) {
+                Log.e("AuctionMyTeamVM", "AppError in loadTeams: ${e.displayMessage}")
                 _uiState.update { it.copy(isLoading = false, error = e.displayMessage ?: "Failed to load teams.") }
             } catch (e: Exception) {
                 Log.e("AuctionMyTeamVM", "Error loading teams: ${e.message}", e)
@@ -81,9 +86,11 @@ class AuctionMyTeamViewModel @Inject constructor(
     }
 
     fun selectTeam(team: Team) {
+        Log.d("AuctionMyTeamVM", "selectTeam called for team: ${team.name} (id=${team.id})")
         viewModelScope.launch {
             try {
-                val detailedTeam = fetchDetailedTeamWithFallback(team.id)
+                val detailedTeam = repository.getTeamById(team.id)
+                Log.d("AuctionMyTeamVM", "selectTeam detailed team fetched: ${detailedTeam.name} (players=${detailedTeam.players.size})")
                 _uiState.update { it.copy(selectedTeam = detailedTeam, suggestionResults = null) }
             } catch (e: Exception) {
                 Log.e("AuctionMyTeamVM", "Error selecting team: ${e.message}", e)
@@ -94,31 +101,23 @@ class AuctionMyTeamViewModel @Inject constructor(
 
     fun refreshTeam() {
         val currentLeagueId = auctionSessionManager.currentLeagueId.value ?: return
+        Log.d("AuctionMyTeamVM", "refreshTeam called for leagueId: $currentLeagueId")
         viewModelScope.launch {
             try {
                 repository.clearCache()
                 val teams = repository.getTeamsFromLeague(currentLeagueId)
                 val currentSelectedId = _uiState.value.selectedTeam?.id
                 val targetTeamId = currentSelectedId ?: teams.firstOrNull()?.id
+                Log.d("AuctionMyTeamVM", "refreshTeam targetTeamId=$targetTeamId (currentSelectedId=$currentSelectedId)")
                 if (targetTeamId != null) {
-                    val updatedTeam = fetchDetailedTeamWithFallback(targetTeamId)
+                    val updatedTeam = repository.getTeamById(targetTeamId)
+                    Log.d("AuctionMyTeamVM", "refreshTeam updated detailed team: ${updatedTeam.name} (players=${updatedTeam.players.size})")
                     _uiState.update { it.copy(teams = teams, selectedTeam = updatedTeam) }
                 }
             } catch (e: Exception) {
                 Log.e("AuctionMyTeamVM", "Error refreshing team: ${e.message}", e)
             }
         }
-    }
-
-    private suspend fun fetchDetailedTeamWithFallback(teamId: Int): Team {
-        var team = repository.getTeamById(teamId)
-        if (team.players.isEmpty()) {
-            val fallbackPlayers = repository.getPlayersForTeam(teamId)
-            if (fallbackPlayers.isNotEmpty()) {
-                team = team.copy(players = fallbackPlayers)
-            }
-        }
-        return team
     }
 
     fun removePlayer(playerId: Int) {

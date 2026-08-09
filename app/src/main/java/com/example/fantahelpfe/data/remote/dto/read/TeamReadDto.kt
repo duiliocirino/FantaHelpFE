@@ -8,9 +8,5 @@ data class TeamReadDto(
     @Json(name = "ownerId") val ownerId: Int,
     @Json(name = "name") val name: String,
     @Json(name = "remainingBudget") val remainingBudget: Int,
-    @Json(name = "players") val players: List<TeamPlayerReadDto>? = null,
-    @Json(name = "teamPlayers") val teamPlayers: List<TeamPlayerReadDto>? = null
-) {
-    val allPlayers: List<TeamPlayerReadDto>
-        get() = players ?: teamPlayers ?: emptyList()
-}
+    @Json(name = "players") val players: List<TeamPlayerReadDto> = emptyList()
+)

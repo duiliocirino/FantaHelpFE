@@ -63,7 +63,11 @@ class DataRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getTeamById(teamId: Int): Team {
-        return safeApiCall { apiService.getTeam(teamId).toDomain() }
+        val raw = safeApiCall { apiService.getTeam(teamId) }
+        Log.d("DataRepository", "RAW getTeam($teamId) DTO response: $raw")
+        val domain = raw.toDomain()
+        Log.d("DataRepository", "Domain team $teamId: name=${domain.name}, playersCount=${domain.players.size}, players=${domain.players}")
+        return domain
     }
 
     override suspend fun getTeamsForLeague(leagueId: Int): List<Team> {
@@ -71,7 +75,11 @@ class DataRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getTeamsFromLeague(leagueId: Int): List<Team> {
-        return safeApiCall { apiService.getTeamsFromLeague(leagueId).map { it.toDomain() } }
+        val rawList = safeApiCall { apiService.getTeamsFromLeague(leagueId) }
+        Log.d("DataRepository", "RAW getTeamsFromLeague($leagueId) DTO response: $rawList")
+        val domainList = rawList.map { it.toDomain() }
+        Log.d("DataRepository", "Domain teams for league $leagueId: ${domainList.map { "${it.name}(id=${it.id}, players=${it.players.size})" }}")
+        return domainList
     }
 
     override suspend fun removePlayerFromTeam(teamId: Int, playerId: Int): Team {
@@ -112,7 +120,10 @@ class DataRepositoryImpl @Inject constructor(
     }
 
     override suspend fun assignPlayerToTeam(teamId: Int, playerId: Int, bid: Int): Team {
-        val result = safeApiCall { apiService.addPlayerToTeam(teamId, TeamPlayerCreateDto(playerId, bid)).toDomain() }
+        val raw = safeApiCall { apiService.addPlayerToTeam(teamId, TeamPlayerCreateDto(playerId, bid)) }
+        Log.d("DataRepository", "RAW addPlayerToTeam(teamId=$teamId, playerId=$playerId, bid=$bid) response: $raw")
+        val result = raw.toDomain()
+        Log.d("DataRepository", "Domain team after assignPlayerToTeam: name=${result.name}, playersCount=${result.players.size}, players=${result.players}")
         clearCache()
         return result
     }
