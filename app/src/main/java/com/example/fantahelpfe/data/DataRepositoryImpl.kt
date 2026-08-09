@@ -133,17 +133,26 @@ class DataRepositoryImpl @Inject constructor(
         return try {
             call()
         } catch (e: HttpException) {
+            val errorBody = e.response()?.errorBody()?.string()
+            Log.e("DataRepository", "API Error ${e.code()}: $errorBody")
             throw when (e.code()) {
                 404 -> AppError.NotFoundError(cause = e)
                 401, 403 -> AppError.AuthorizationError(cause = e)
-                else -> AppError.ApiError(statusCode = e.code(), apiErrorMessage = e.message(), cause = e)
+                else -> AppError.ApiError(
+                    statusCode = e.code(),
+                    apiErrorMessage = errorBody ?: e.message(),
+                    cause = e
+                )
             }
         } catch (e: IOException) {
+            Log.e("DataRepository", "Network error: ${e.message}", e)
             throw AppError.NetworkError(cause = e)
         } catch (e: AppError) {
             throw e
         } catch (e: Exception) {
+            Log.e("DataRepository", "Unexpected error: ${e.message}", e)
             throw AppError.UnknownError(cause = e)
         }
     }
+
 }
