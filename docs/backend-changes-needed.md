@@ -12,10 +12,11 @@ The frontend audit found 3 missing fields in Read DTOs that cause Moshi deserial
 | 2 | `TeamPlayerReadDto` missing `PlayerRole` | ✅ RESOLVED | BE added `PlayerRole` property, mapped from `TeamPlayer.Player.Role` |
 | 3 | `LeagueReadDto` missing `GoalBonusPerRole` | ✅ RESOLVED | BE added `GoalBonusPerRole` property, mapped from `League.GoalBonusPerRole` |
 | 4 & 5 | `SuggestionRequest.AuctionedPlayer` & Single-Call Contract | ✅ RESOLVED | BE merged single-call contract: `SuggestionResult` contains `score` (base optimal) and `potentialScore` (`SuggestionResult?`, potential optimal). Shared per-role DP tables. Returns `potentialScore = null` if budget is exceeded or `auctionedPlayer` is null. Integrated on FE. |
+| 6 | `GET /api/teams/{id}` Roster Inclusion | 🚨 ACTION REQUIRED | Ensure `GET /api/teams/{id}` controller includes `.Include(t => t.TeamPlayers)` so `TeamReadDto.Players` is populated with acquired `TeamPlayerReadDto` list. |
 
 ---
 
-## Resolved Changes (Items 1–3)
+## Resolved Changes (Items 1–5)
 
 ### 1. `TeamReadDto` — Missing `OwnerId` ✅
 
@@ -53,6 +54,29 @@ public bool GoalBonusPerRole { get; set; }
 ```
 
 **Mapper updated** to include `GoalBonusPerRole = league.GoalBonusPerRole`.
+
+---
+
+## Action Required (Item 6) 🚨
+
+### 6. `GET /api/teams/{id}` — Include Roster (`Players` collection)
+
+**File**: `Fantahelp.API/Controllers/TeamsController.cs` (or `GetTeamById` handler)
+
+**Issue**: While `POST /api/teams/getOptimal` correctly includes assigned team players when generating squad suggestions, `GET /api/teams/{id}` returns an empty `players: []` array on `TeamReadDto`.
+
+**Fix Required**:
+Ensure EF Core explicitly includes `TeamPlayers` / `Players` when retrieving the team entity:
+
+```csharp
+var team = await _context.Teams
+    .Include(t => t.TeamPlayers)
+    .ThenInclude(tp => tp.Player)
+    .FirstOrDefaultAsync(t => t.Id == id);
+```
+
+And map `team.TeamPlayers` to `TeamReadDto.Players`.
+
 
 ---
 
