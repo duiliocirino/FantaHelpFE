@@ -24,6 +24,11 @@ fun AuctionMarketScreen(
     val viewModel: AuctionMarketViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
 
+    // Refresh available players when navigating to Market tab
+    LaunchedEffect(Unit) {
+        viewModel.loadAvailablePlayers()
+    }
+
     Scaffold { paddingValues ->
         Column(
             modifier = Modifier

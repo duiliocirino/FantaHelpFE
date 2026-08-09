@@ -59,7 +59,7 @@ class AuctionMarketViewModel @Inject constructor(
                 _uiState.update { 
                     it.copy(
                         availablePlayers = players, 
-                        filteredPlayers = applyFiltersAndSort(players, null, SortOption.Price, ""),
+                        filteredPlayers = applyFiltersAndSort(players, it.filterRole, it.sortBy, it.searchQuery),
                         isLoading = false 
                     ) 
                 }
