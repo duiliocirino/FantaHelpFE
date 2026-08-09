@@ -79,7 +79,7 @@ fun AuctionSettingsScreen(
     val searchResults = remember(searchQuery, allPlayers) {
         if (searchQuery.isBlank()) emptyList()
         else allPlayers.filter {
-            it.name.contains(searchQuery, ignoreCase = true) || it.realTeam.contains(searchQuery, ignoreCase = true)
+            it.name.contains(searchQuery, ignoreCase = true) || it.squad.contains(searchQuery, ignoreCase = true)
         }.take(6)
     }
 
@@ -90,11 +90,15 @@ fun AuctionSettingsScreen(
             playerMap[id] ?: Player(
                 id = id,
                 name = "Player #$id",
-                realTeam = "Unknown",
+                squad = "Unknown",
                 role = com.example.fantahelpfe.model.PlayerRole.UNKNOWN,
                 price = 0,
                 rating = 0.0,
-                expectedPerformance = 0.0
+                regularness = 0,
+                fvm = 0,
+                expectedPerformance = 0.0,
+                expectedStd = 0.0,
+                expectedPrice = 0
             )
         }
     }
@@ -159,7 +163,7 @@ fun AuctionSettingsScreen(
                                         RoleBadge(roleName = player.role.name)
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(player.name, fontWeight = FontWeight.Bold)
-                                        Text(" (${player.realTeam})", style = MaterialTheme.typography.bodySmall)
+                                        Text(" (${player.squad})", style = MaterialTheme.typography.bodySmall)
                                     }
                                     Icon(Icons.Default.Add, contentDescription = "Add Favorite", tint = MaterialTheme.colorScheme.primary)
                                 }
@@ -193,7 +197,7 @@ fun AuctionSettingsScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Column {
                                     Text(player.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
-                                    Text("${player.realTeam} · Price: ${player.price} CR", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("${player.squad} · Price: ${player.price} CR", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                             IconButton(onClick = { sharedViewModel.removeGlobalFavoritePlayer(player.id) }) {
