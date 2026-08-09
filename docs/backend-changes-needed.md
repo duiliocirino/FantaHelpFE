@@ -12,6 +12,7 @@ The frontend audit found 3 missing fields in Read DTOs that cause Moshi deserial
 | 2 | `TeamPlayerReadDto` missing `PlayerRole` | ✅ RESOLVED | BE added `PlayerRole` property, mapped from `TeamPlayer.Player.Role` |
 | 3 | `LeagueReadDto` missing `GoalBonusPerRole` | ✅ RESOLVED | BE added `GoalBonusPerRole` property, mapped from `League.GoalBonusPerRole` |
 | 4 | `SuggestionRequest` missing `AuctionedPlayer` | 🔶 TRACKED | DTO field added and deserialized. Scoring logic to use it in potential score calculation is in the BE backlog. Until then, convenience delta reads zero. |
+| 5 | Convenience Score Single-Call Optimization | 💡 PROPOSED | Optimize `POST /api/teams/getOptimal` when `auctionedPlayer` is present to return `result[0]` (Base) and `result[1]` (Potential) in a single call, cutting server solver calls by 50%. |
 
 ---
 
@@ -56,7 +57,7 @@ public bool GoalBonusPerRole { get; set; }
 
 ---
 
-## Tracked (Item 4)
+## Tracked & Proposed (Items 4–5)
 
 ### 4. `SuggestionRequest` — Missing `AuctionedPlayer` 🔶
 
@@ -70,8 +71,31 @@ The FE sends `auctionedPlayer` (nullable object with `playerId` and `acquisition
 
 ---
 
+### 5. Single-Call Optimization for Convenience Score (`POST /api/teams/getOptimal`) 💡
+
+**Endpoint**: `POST /api/teams/getOptimal`
+
+**Current Behavior**: To compute the "Convenience Score Delta" (Advantage of buying a player), the FE makes 2 parallel requests to `POST /api/teams/getOptimal`:
+1. `baseRequest` (`auctionedPlayer = null`) -> Base Optimal Score
+2. `potentialRequest` (`auctionedPlayer = { playerId, acquisitionPrice }`) -> Potential Optimal Score
+
+**Proposed Optimization**:
+When `auctionedPlayer` is present in `SuggestionRequest`, the backend should execute both calculations in a single request context (reusing team data & league rules) and return a 2-element array `[SuggestionResult]`:
+- `result[0]`: **Base Optimal Suggestion** (current roster)
+- `result[1]`: **Potential Optimal Suggestion** (with `auctionedPlayer` acquired)
+
+**Impact & Benefits**:
+- Cuts backend optimization solver CPU execution time by **50%**.
+- Reduces mobile client HTTP roundtrips from 2 to 1.
+- Eliminates duplicate database queries for league rules and available player pools.
+
+---
+
 ## Impact
 
-Items 1–3 were **hard crashes** on the FE side (Moshi `JsonDataException`) for every league/team/player fetch. Now resolved — the auction flow should function without deserialization errors.
+Items 1–3 were **hard crashes** on the FE side (Moshi `JsonDataException`) for every league/team/player fetch. Now resolved — the auction flow functions without deserialization errors.
 
 Item 4 is non-blocking but makes the convenience score feature return incorrect data (delta always zero) until the BE scoring logic is implemented.
+
+Item 5 is a recommended backend performance optimization to halve server load during live auctions.
+

@@ -15,6 +15,7 @@ import com.example.fantahelpfe.model.Player
 import com.example.fantahelpfe.model.Team
 import com.example.fantahelpfe.model.TeamPlayer
 import com.example.fantahelpfe.utils.AppError
+import kotlinx.coroutines.CancellationException
 import retrofit2.HttpException
 import java.io.IOException
 import javax.inject.Inject
@@ -147,6 +148,8 @@ class DataRepositoryImpl @Inject constructor(
         } catch (e: IOException) {
             Log.e("DataRepository", "Network error: ${e.message}", e)
             throw AppError.NetworkError(cause = e)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: AppError) {
             throw e
         } catch (e: Exception) {

@@ -15,9 +15,10 @@ import com.example.fantahelpfe.model.League // For league context if needed for 
 import com.example.fantahelpfe.model.Player
 import com.example.fantahelpfe.model.Team
 import com.example.fantahelpfe.utils.AppError
-import kotlinx.coroutines.async
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -112,25 +113,30 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                 _uiState,
                 auctionSessionManager.settings
             ) { state, settings ->
-                Pair(state, settings)
+                ScoreCalculationKey(
+                    playerId = state.selectedPlayer?.id,
+                    teamId = state.selectedTeamForAssignment?.id,
+                    bid = state.currentBidAmount,
+                    settings = settings
+                )
             }
-            .debounce(300)
             .distinctUntilChanged()
-            .collect { (state, settings) ->
+            .debounce(300)
+            .collect { key ->
+                val state = _uiState.value
                 val player = state.selectedPlayer
                 val team = state.selectedTeamForAssignment
-                val bid = state.currentBidAmount
 
-                if (player != null && team != null && bid > 0) {
+                if (player != null && player.id == key.playerId && team != null && team.id == key.teamId && key.bid > 0) {
                     calculateConvenienceScore(
                         playerToConsider = player,
-                        bidForPlayer = bid,
+                        bidForPlayer = key.bid,
                         teamForContext = team,
-                        lineUp = settings.lineUp,
-                        globalFavoritePlayerIds = settings.globalFavoritePlayerIds,
-                        creditsDistributionMultiplier = settings.creditsDistributionMultiplier
+                        lineUp = key.settings.lineUp,
+                        globalFavoritePlayerIds = key.settings.globalFavoritePlayerIds,
+                        creditsDistributionMultiplier = key.settings.creditsDistributionMultiplier
                     )
-                } else if (player != null || team != null) {
+                } else if (player == null || team == null || key.bid <= 0) {
                     clearConvenienceScores()
                 }
             }
@@ -317,6 +323,8 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                     )
                 }
 
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: AppError) {
                 // ... error handling ...
                 Log.e("AuctionBuyVM", "Error calculating score: ${e.displayMessage}")
@@ -394,3 +402,10 @@ class AuctionBuyPlayersViewModel @Inject constructor(
         _uiState.update { it.copy(isLoadingConvenienceScore = false) }
     }
 }
+
+private data class ScoreCalculationKey(
+    val playerId: Int?,
+    val teamId: Int?,
+    val bid: Int,
+    val settings: com.example.fantahelpfe.data.AuctionSettings
+)
