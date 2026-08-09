@@ -11,7 +11,7 @@ The frontend audit found 3 missing fields in Read DTOs that cause Moshi deserial
 | 1 | `TeamReadDto` missing `OwnerId` | ✅ RESOLVED | BE added `OwnerId` property, mapped from `Team.OwnerId` |
 | 2 | `TeamPlayerReadDto` missing `PlayerRole` | ✅ RESOLVED | BE added `PlayerRole` property, mapped from `TeamPlayer.Player.Role` |
 | 3 | `LeagueReadDto` missing `GoalBonusPerRole` | ✅ RESOLVED | BE added `GoalBonusPerRole` property, mapped from `League.GoalBonusPerRole` |
-| 4 & 5 | `SuggestionRequest.AuctionedPlayer` & Single-Call Contract | ⏳ IN PROGRESS | Agreed contract: `SuggestionResult` contains `score` (base optimal) and `potentialScore` (`Score?`, potential optimal). Shares heavy DP calculation, reducing CPU load by 50%. Returns `potentialScore = null` if `auctionedPlayer` is null or budget is exceeded. |
+| 4 & 5 | `SuggestionRequest.AuctionedPlayer` & Single-Call Contract | ✅ RESOLVED | BE merged single-call contract: `SuggestionResult` contains `score` (base optimal) and `potentialScore` (`SuggestionResult?`, potential optimal). Shared per-role DP tables. Returns `potentialScore = null` if budget is exceeded or `auctionedPlayer` is null. Integrated on FE. |
 
 ---
 

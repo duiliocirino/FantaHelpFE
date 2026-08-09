@@ -4,9 +4,9 @@ import com.example.fantahelpfe.data.remote.dto.read.PlayerReadDto
 import com.squareup.moshi.Json
 
 data class SuggestionResult(
-    @Json(name = "suggestedPlayers") val suggestedPlayers: List<PlayerReadDto>,
-    @Json(name = "totalExpectedPrice") val totalExpectedPrice: Int,
-    @Json(name = "totalExpectedPriceStd") val totalExpectedPriceStd: Int,
+    @Json(name = "suggestedPlayers") val suggestedPlayers: List<PlayerReadDto> = emptyList(),
+    @Json(name = "totalExpectedPrice") val totalExpectedPrice: Int = 0,
+    @Json(name = "totalExpectedPriceStd") val totalExpectedPriceStd: Int = 0,
     @Json(name = "score") val score: Score,
-    @Json(name = "potentialScore") val potentialScore: Score? = null
+    @Json(name = "potentialScore") val potentialScore: SuggestionResult? = null
 )

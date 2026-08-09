@@ -295,19 +295,16 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                 val firstResult = results.firstOrNull()
 
                 val baseScore = firstResult?.score?.totalScore
-                val potentialScore = firstResult?.potentialScore?.totalScore ?: run {
-                    // Fallback: if BE has not populated potentialScore yet, fetch base score separately
-                    val baseRequest = potentialRequest.copy(auctionedPlayer = null)
-                    val baseResult = repository.getSuggestion(baseRequest).firstOrNull()
-                    baseResult?.score?.totalScore
-                }
+                val potentialScore = firstResult?.potentialScore?.score?.totalScore
+                val isBudgetExceeded = firstResult != null && firstResult.potentialScore == null
 
                 _uiState.update {
                     it.copy(
                         baseOptimalScore = baseScore,
                         potentialOptimalScore = potentialScore,
-                        convenienceScoreDelta = if (baseScore != null && potentialScore != null) potentialScore - baseScore else 0.0,
-                        isLoadingConvenienceScore = false
+                        convenienceScoreDelta = if (baseScore != null && potentialScore != null) potentialScore - baseScore else null,
+                        isLoadingConvenienceScore = false,
+                        convenienceScoreError = if (isBudgetExceeded) "Bid exceeds remaining budget" else null
                     )
                 }
 
