@@ -20,10 +20,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -46,20 +44,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.fantahelpfe.model.Player
 import com.example.fantahelpfe.utils.capitalizeFirstLetter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuctionSettingsScreen(
-    sharedViewModel: AuctionSharedViewModel,
-    settingsViewModel: AuctionSettingsViewModel = hiltViewModel()
+    sharedViewModel: AuctionSharedViewModel
 ) {
-    val uiState by settingsViewModel.uiState.collectAsState()
-    val settings = uiState.settings
+    val settings by sharedViewModel.settings.collectAsState()
+    val allPlayers by sharedViewModel.allPlayers.collectAsState()
 
     var multiplierInput by remember { mutableStateOf(settings.creditsDistributionMultiplier.toString()) }
+    var searchQuery by remember { mutableStateOf("") }
 
     // LineUp inputs
     var keepersInput by remember { mutableStateOf(settings.lineUp.keepers.toString()) }
@@ -67,7 +64,6 @@ fun AuctionSettingsScreen(
     var midfieldersInput by remember { mutableStateOf(settings.lineUp.midfielders.toString()) }
     var attackersInput by remember { mutableStateOf(settings.lineUp.attackers.toString()) }
 
-    // Update inputs when settings change
     LaunchedEffect(settings.creditsDistributionMultiplier) {
         multiplierInput = settings.creditsDistributionMultiplier.toString()
     }
@@ -79,6 +75,30 @@ fun AuctionSettingsScreen(
         attackersInput = settings.lineUp.attackers.toString()
     }
 
+    // Filter matching search suggestions
+    val searchResults = remember(searchQuery, allPlayers) {
+        if (searchQuery.isBlank()) emptyList()
+        else allPlayers.filter {
+            it.name.contains(searchQuery, ignoreCase = true) || it.realTeam.contains(searchQuery, ignoreCase = true)
+        }.take(6)
+    }
+
+    // Map favorite IDs to Player objects
+    val favoritePlayers = remember(settings.globalFavoritePlayerIds, allPlayers) {
+        val playerMap = allPlayers.associateBy { it.id }
+        settings.globalFavoritePlayerIds.map { id ->
+            playerMap[id] ?: Player(
+                id = id,
+                name = "Player #$id",
+                realTeam = "Unknown",
+                role = com.example.fantahelpfe.model.PlayerRole.UNKNOWN,
+                price = 0,
+                rating = 0.0,
+                expectedPerformance = 0.0
+            )
+        }
+    }
+
     Scaffold { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -87,26 +107,25 @@ fun AuctionSettingsScreen(
                 .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Section 1: Global Favorite Players
+            // Global Favorite Players Section
             item {
                 Text("Global Favorite Players ★", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    "Search players by name to add them to your global target list.",
+                    "Search player by name to add to favorites.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Search Input Field
                 OutlinedTextField(
-                    value = uiState.searchQuery,
-                    onValueChange = { settingsViewModel.onSearchQueryChanged(it) },
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
                     label = { Text("Search Player by Name...") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
                     trailingIcon = {
-                        if (uiState.searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { settingsViewModel.onSearchQueryChanged("") }) {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
                                 Icon(Icons.Default.Clear, contentDescription = "Clear")
                             }
                         }
@@ -115,8 +134,8 @@ fun AuctionSettingsScreen(
                     singleLine = true
                 )
 
-                // Search Results Dropdown List
-                AnimatedVisibility(visible = uiState.searchResults.isNotEmpty()) {
+                // Search Overlay Suggestions
+                AnimatedVisibility(visible = searchResults.isNotEmpty()) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -124,11 +143,14 @@ fun AuctionSettingsScreen(
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                     ) {
                         Column {
-                            uiState.searchResults.forEach { player ->
+                            searchResults.forEach { player ->
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clickable { settingsViewModel.addFavoritePlayer(player) }
+                                        .clickable {
+                                            sharedViewModel.addGlobalFavoritePlayer(player.id)
+                                            searchQuery = ""
+                                        }
                                         .padding(12.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
@@ -136,10 +158,8 @@ fun AuctionSettingsScreen(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         RoleBadge(roleName = player.role.name)
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Column {
-                                            Text(player.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
-                                            Text("${player.realTeam} · Base Price: ${player.price} CR", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        }
+                                        Text(player.name, fontWeight = FontWeight.Bold)
+                                        Text(" (${player.realTeam})", style = MaterialTheme.typography.bodySmall)
                                     }
                                     Icon(Icons.Default.Add, contentDescription = "Add Favorite", tint = MaterialTheme.colorScheme.primary)
                                 }
@@ -150,29 +170,13 @@ fun AuctionSettingsScreen(
                 }
             }
 
-            // Favorites List Section
-            if (uiState.favoritePlayers.isEmpty()) {
+            // Favorites List
+            if (favoritePlayers.isEmpty()) {
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                "No global favorite players selected yet.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+                    Text("No global favorite players set.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
-                items(uiState.favoritePlayers, key = { it.id }) { player ->
+                items(favoritePlayers, key = { it.id }) { player ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -189,14 +193,10 @@ fun AuctionSettingsScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Column {
                                     Text(player.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
-                                    Text(
-                                        "${player.realTeam} · Rating: ${player.rating} · Price: ${player.price} CR",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    Text("${player.realTeam} · Price: ${player.price} CR", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
-                            IconButton(onClick = { settingsViewModel.removeFavoritePlayer(player.id) }) {
+                            IconButton(onClick = { sharedViewModel.removeGlobalFavoritePlayer(player.id) }) {
                                 Icon(Icons.Default.Delete, contentDescription = "Remove Favorite", tint = MaterialTheme.colorScheme.error)
                             }
                         }
@@ -204,19 +204,18 @@ fun AuctionSettingsScreen(
                 }
             }
 
-            // Section 2: Credits Distribution Multiplier
+            // Multiplier Section
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 Divider()
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("Credits Distribution Multiplier", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(4.dp))
                 OutlinedTextField(
                     value = multiplierInput,
                     onValueChange = {
                         multiplierInput = it
                         it.toIntOrNull()?.let { num ->
-                            settingsViewModel.updateCreditsDistributionMultiplier(num)
+                            sharedViewModel.updateCreditsDistributionMultiplier(num)
                         }
                     },
                     label = { Text("Multiplier (e.g., 1, 5, 10)") },
@@ -225,11 +224,10 @@ fun AuctionSettingsScreen(
                 )
             }
 
-            // Section 3: LineUp Configuration
+            // LineUp Section
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("LineUp Target Roster", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -238,9 +236,7 @@ fun AuctionSettingsScreen(
                         value = keepersInput,
                         onValueChange = {
                             keepersInput = it
-                            it.toIntOrNull()?.let { num ->
-                                settingsViewModel.updateLineUp(settings.lineUp.copy(keepers = num))
-                            }
+                            it.toIntOrNull()?.let { num -> sharedViewModel.updateLineUp(settings.lineUp.copy(keepers = num)) }
                         },
                         label = { Text("GK") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -250,9 +246,7 @@ fun AuctionSettingsScreen(
                         value = defendersInput,
                         onValueChange = {
                             defendersInput = it
-                            it.toIntOrNull()?.let { num ->
-                                settingsViewModel.updateLineUp(settings.lineUp.copy(defenders = num))
-                            }
+                            it.toIntOrNull()?.let { num -> sharedViewModel.updateLineUp(settings.lineUp.copy(defenders = num)) }
                         },
                         label = { Text("DEF") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -262,9 +256,7 @@ fun AuctionSettingsScreen(
                         value = midfieldersInput,
                         onValueChange = {
                             midfieldersInput = it
-                            it.toIntOrNull()?.let { num ->
-                                settingsViewModel.updateLineUp(settings.lineUp.copy(midfielders = num))
-                            }
+                            it.toIntOrNull()?.let { num -> sharedViewModel.updateLineUp(settings.lineUp.copy(midfielders = num)) }
                         },
                         label = { Text("MID") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -274,9 +266,7 @@ fun AuctionSettingsScreen(
                         value = attackersInput,
                         onValueChange = {
                             attackersInput = it
-                            it.toIntOrNull()?.let { num ->
-                                settingsViewModel.updateLineUp(settings.lineUp.copy(attackers = num))
-                            }
+                            it.toIntOrNull()?.let { num -> sharedViewModel.updateLineUp(settings.lineUp.copy(attackers = num)) }
                         },
                         label = { Text("ATT") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),

@@ -1,19 +1,25 @@
 package com.example.fantahelpfe.ui.auction
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.fantahelpfe.data.AuctionSessionManager
 import com.example.fantahelpfe.data.AuctionSettings
+import com.example.fantahelpfe.data.DataRepository
 import com.example.fantahelpfe.data.remote.dto.LineUp
 import com.example.fantahelpfe.model.League
 import com.example.fantahelpfe.model.Player
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class AuctionSharedViewModel @Inject constructor(
-    private val auctionSessionManager: AuctionSessionManager
+    private val auctionSessionManager: AuctionSessionManager,
+    private val repository: DataRepository
 ) : ViewModel() {
 
     val settings: StateFlow<AuctionSettings> = auctionSessionManager.settings
@@ -21,6 +27,21 @@ class AuctionSharedViewModel @Inject constructor(
     val leagueDetails: StateFlow<League?> = auctionSessionManager.leagueDetails
     val refreshEvent: SharedFlow<Unit> = auctionSessionManager.refreshEvent
     val selectedPlayerForBuy: StateFlow<Player?> = auctionSessionManager.selectedPlayerForBuy
+
+    private val _allPlayers = MutableStateFlow<List<Player>>(emptyList())
+    val allPlayers: StateFlow<List<Player>> = _allPlayers.asStateFlow()
+
+    init {
+        loadAllPlayers()
+    }
+
+    fun loadAllPlayers() {
+        viewModelScope.launch {
+            try {
+                _allPlayers.value = repository.getAllPlayers()
+            } catch (_: Exception) { }
+        }
+    }
 
     fun initializeForLeague(leagueId: Int) {
         auctionSessionManager.initializeForLeague(leagueId)
