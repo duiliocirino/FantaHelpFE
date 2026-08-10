@@ -1,6 +1,8 @@
 package com.example.fantahelpfe.ui.auction
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -56,12 +58,15 @@ fun AuctionBuyPlayersScreen(
         }
     }
 
+    val scrollState = rememberScrollState()
+
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)
                 .padding(16.dp)
                 .fillMaxSize()
+                .verticalScroll(scrollState)
         ) {
         // --- League Name (Optional) ---
         uiState.leagueDetails?.let {
@@ -352,7 +357,7 @@ fun AuctionBuyPlayersScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        Spacer(modifier = Modifier.weight(1f)) // Push button to bottom
+        Spacer(modifier = Modifier.height(16.dp)) // Spacing before Assign button
 
         // --- Assign Button ---
         if (uiState.assignmentStatus == ActionStatus.Loading) {
