@@ -625,12 +625,6 @@ private fun PlayerLineupRow(
     currentBid: Int
 ) {
     val isTarget = playerDto.id == selectedPlayerId
-    val priceText = when {
-        isTarget -> "$currentBid CR (Bid)"
-        playerDto.price > 0 -> "${playerDto.price} CR"
-        playerDto.expectedPrice > 0 -> "${playerDto.expectedPrice} CR"
-        else -> "${playerDto.fvm} CR"
-    }
 
     Row(
         modifier = Modifier
@@ -668,12 +662,39 @@ private fun PlayerLineupRow(
                 }
             }
         }
-        Text(
-            priceText,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+
+        Column(horizontalAlignment = Alignment.End) {
+            if (isTarget) {
+                Text(
+                    "$currentBid CR (Bid)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                if (playerDto.expectedPrice > 0) {
+                    Text(
+                        "Exp: ${playerDto.expectedPrice} CR",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                val expValue = if (playerDto.expectedPrice > 0) playerDto.expectedPrice else if (playerDto.fvm > 0) playerDto.fvm else playerDto.price
+                Text(
+                    "Exp: $expValue CR",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (playerDto.price > 0 && playerDto.price != expValue) {
+                    Text(
+                        "Base: ${playerDto.price} CR",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
     }
 }
 
