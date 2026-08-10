@@ -62,6 +62,7 @@ data class AuctionBuyPlayersUiState(
     val displacedPlayerName: String? = null,
     val creditsPerPointRatio: Double? = null,
     val potentialSuggestedPlayers: List<PlayerReadDto> = emptyList(),
+    val totalExpectedPrice: Int? = null,
     val isLoadingConvenienceScore: Boolean = false,
     val convenienceScoreError: String? = null,
 
@@ -328,6 +329,8 @@ class AuctionBuyPlayersViewModel @Inject constructor(
 
                 val roi = if (delta != null && delta > 0) bidForPlayer / delta else null
 
+                val totalExpCost = firstResult?.potentialScore?.totalExpectedPrice ?: firstResult?.totalExpectedPrice
+
                 _uiState.update {
                     it.copy(
                         baseOptimalScore = baseScore,
@@ -339,6 +342,7 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                         displacedPlayerName = displaced?.name,
                         creditsPerPointRatio = roi,
                         potentialSuggestedPlayers = potentialPlayers,
+                        totalExpectedPrice = totalExpCost,
                         isLoadingConvenienceScore = false,
                         convenienceScoreError = if (isBudgetExceeded) "Bid exceeds remaining budget" else null
                     )
@@ -367,6 +371,7 @@ class AuctionBuyPlayersViewModel @Inject constructor(
             displacedPlayerName = null,
             creditsPerPointRatio = null,
             potentialSuggestedPlayers = emptyList(),
+            totalExpectedPrice = null,
             isLoadingConvenienceScore = false,
             convenienceScoreError = null
         )}

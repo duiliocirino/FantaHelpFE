@@ -565,6 +565,38 @@ fun HybridExecutiveDashboardCard(
                             }
                         }
 
+                        // Roster Completion Cost Feasibility Bar
+                        uiState.totalExpectedPrice?.let { estCost ->
+                            val remainingBudget = (uiState.selectedTeamForAssignment?.remainingBudget ?: 0) - uiState.currentBidAmount
+                            val isSafe = remainingBudget >= estCost
+
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Surface(
+                                color = if (isSafe) Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
+                                shape = MaterialTheme.shapes.extraSmall,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "💰 Est. Roster Completion Cost:",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSafe) Color(0xFF2E7D32) else Color(0xFFC62828)
+                                    )
+                                    Text(
+                                        "$estCost CR (Rem. Budget: $remainingBudget CR)",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSafe) Color(0xFF2E7D32) else Color(0xFFC62828)
+                                    )
+                                }
+                            }
+                        }
+
                         // Projected Starting XI vs Bench Roster Breakdown
                         if (uiState.potentialSuggestedPlayers.isNotEmpty()) {
                             val (startersList, benchList) = remember(uiState.potentialSuggestedPlayers) {
@@ -640,24 +672,42 @@ private fun PlayerLineupRow(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
             SuggestionRoleBadge(roleName = playerDto.role)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                playerDto.name,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (isTarget) FontWeight.Bold else FontWeight.Medium,
-                color = if (isTarget) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-            )
-            if (isTarget) {
-                Spacer(modifier = Modifier.width(6.dp))
-                Surface(
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = MaterialTheme.shapes.extraSmall
-                ) {
+            Spacer(modifier = Modifier.width(6.dp))
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "⭐️ Target",
+                        playerDto.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = if (isTarget) FontWeight.Bold else FontWeight.Medium,
+                        color = if (isTarget) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                    )
+                    if (playerDto.squad.isNotEmpty()) {
+                        Text(
+                            " (${playerDto.squad})",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (isTarget) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = MaterialTheme.shapes.extraSmall
+                        ) {
+                            Text(
+                                "⭐️ Target",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+                if (playerDto.expectedPerformance > 0.0) {
+                    Text(
+                        String.format("⚡ Performance: %.2f pts", playerDto.expectedPerformance),
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        color = MaterialTheme.colorScheme.tertiary
                     )
                 }
             }
