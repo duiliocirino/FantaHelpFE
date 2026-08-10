@@ -15,15 +15,24 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class SortOption { Price, Rating, ExpectedPerformance, Name }
+enum class SortOption(val displayName: String) {
+    ExpectedPerformance("⚡ Exp. Perf"),
+    ExpectedPrice("🤖 Exp. Price"),
+    Rating("⭐️ Rating"),
+    Regularness("⏱️ Starter Share"),
+    Price("💰 Base Price"),
+    Name("🔤 Name")
+}
 
 data class AuctionMarketUiState(
     val availablePlayers: List<Player> = emptyList(),
     val filteredPlayers: List<Player> = emptyList(),
     val isLoading: Boolean = false,
-    val filterRole: String? = null, // Using String for simplicity, can be PlayerRole
-    val sortBy: SortOption = SortOption.Price,
+    val filterRole: String? = null,
+    val sortBy: SortOption = SortOption.ExpectedPerformance,
     val searchQuery: String = "",
+    val onlyFavorites: Boolean = false,
+    val globalFavoriteIds: List<Int> = emptyList(),
     val error: String? = null
 )
 
@@ -38,9 +47,29 @@ class AuctionMarketViewModel @Inject constructor(
 
     init {
         loadAvailablePlayers()
+
         viewModelScope.launch {
             auctionSessionManager.refreshEvent.collect {
                 loadAvailablePlayers()
+            }
+        }
+
+        viewModelScope.launch {
+            auctionSessionManager.settings.collect { settings ->
+                _uiState.update { state ->
+                    val favIds = settings.globalFavoritePlayerIds
+                    val newState = state.copy(globalFavoriteIds = favIds)
+                    newState.copy(
+                        filteredPlayers = applyFiltersAndSort(
+                            newState.availablePlayers,
+                            newState.filterRole,
+                            newState.sortBy,
+                            newState.searchQuery,
+                            newState.onlyFavorites,
+                            favIds
+                        )
+                    )
+                }
             }
         }
     }
@@ -56,12 +85,19 @@ class AuctionMarketViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 val players = repository.getAvailablePlayersForLeague(leagueId)
-                _uiState.update { 
-                    it.copy(
-                        availablePlayers = players, 
-                        filteredPlayers = applyFiltersAndSort(players, it.filterRole, it.sortBy, it.searchQuery),
-                        isLoading = false 
-                    ) 
+                _uiState.update { state ->
+                    state.copy(
+                        availablePlayers = players,
+                        filteredPlayers = applyFiltersAndSort(
+                            players,
+                            state.filterRole,
+                            state.sortBy,
+                            state.searchQuery,
+                            state.onlyFavorites,
+                            state.globalFavoriteIds
+                        ),
+                        isLoading = false
+                    )
                 }
             } catch (e: AppError) {
                 _uiState.update { it.copy(isLoading = false, error = e.displayMessage ?: "Failed to load players.") }
@@ -72,23 +108,67 @@ class AuctionMarketViewModel @Inject constructor(
     }
 
     fun filterByRole(role: String?) {
-        _uiState.update { 
-            val newState = it.copy(filterRole = role)
-            newState.copy(filteredPlayers = applyFiltersAndSort(newState.availablePlayers, role, newState.sortBy, newState.searchQuery))
+        _uiState.update { state ->
+            val newState = state.copy(filterRole = role)
+            newState.copy(
+                filteredPlayers = applyFiltersAndSort(
+                    newState.availablePlayers,
+                    role,
+                    newState.sortBy,
+                    newState.searchQuery,
+                    newState.onlyFavorites,
+                    newState.globalFavoriteIds
+                )
+            )
         }
     }
 
     fun sortBy(option: SortOption) {
-        _uiState.update { 
-            val newState = it.copy(sortBy = option)
-            newState.copy(filteredPlayers = applyFiltersAndSort(newState.availablePlayers, newState.filterRole, option, newState.searchQuery))
+        _uiState.update { state ->
+            val newState = state.copy(sortBy = option)
+            newState.copy(
+                filteredPlayers = applyFiltersAndSort(
+                    newState.availablePlayers,
+                    newState.filterRole,
+                    option,
+                    newState.searchQuery,
+                    newState.onlyFavorites,
+                    newState.globalFavoriteIds
+                )
+            )
+        }
+    }
+
+    fun toggleOnlyFavorites() {
+        _uiState.update { state ->
+            val newOnlyFavs = !state.onlyFavorites
+            val newState = state.copy(onlyFavorites = newOnlyFavs)
+            newState.copy(
+                filteredPlayers = applyFiltersAndSort(
+                    newState.availablePlayers,
+                    newState.filterRole,
+                    newState.sortBy,
+                    newState.searchQuery,
+                    newOnlyFavs,
+                    newState.globalFavoriteIds
+                )
+            )
         }
     }
 
     fun search(query: String) {
-        _uiState.update { 
-            val newState = it.copy(searchQuery = query)
-            newState.copy(filteredPlayers = applyFiltersAndSort(newState.availablePlayers, newState.filterRole, newState.sortBy, query))
+        _uiState.update { state ->
+            val newState = state.copy(searchQuery = query)
+            newState.copy(
+                filteredPlayers = applyFiltersAndSort(
+                    newState.availablePlayers,
+                    newState.filterRole,
+                    newState.sortBy,
+                    query,
+                    newState.onlyFavorites,
+                    newState.globalFavoriteIds
+                )
+            )
         }
     }
 
@@ -100,7 +180,9 @@ class AuctionMarketViewModel @Inject constructor(
         players: List<Player>,
         role: String?,
         sortBy: SortOption,
-        query: String
+        query: String,
+        onlyFavs: Boolean,
+        favIds: List<Int>
     ): List<Player> {
         var filtered = players
 
@@ -108,14 +190,21 @@ class AuctionMarketViewModel @Inject constructor(
             filtered = filtered.filter { it.role.name.equals(role, ignoreCase = true) }
         }
 
+        if (onlyFavs) {
+            val favSet = favIds.toSet()
+            filtered = filtered.filter { it.id in favSet }
+        }
+
         if (query.isNotEmpty()) {
-            filtered = filtered.filter { it.name.contains(query, ignoreCase = true) }
+            filtered = filtered.filter { it.name.contains(query, ignoreCase = true) || it.squad.contains(query, ignoreCase = true) }
         }
 
         return when (sortBy) {
-            SortOption.Price -> filtered.sortedBy { it.price }
-            SortOption.Rating -> filtered.sortedByDescending { it.rating }
             SortOption.ExpectedPerformance -> filtered.sortedByDescending { it.expectedPerformance }
+            SortOption.ExpectedPrice -> filtered.sortedByDescending { if (it.expectedPrice > 0) it.expectedPrice else it.price }
+            SortOption.Rating -> filtered.sortedByDescending { it.rating }
+            SortOption.Regularness -> filtered.sortedByDescending { it.regularness }
+            SortOption.Price -> filtered.sortedBy { it.price }
             SortOption.Name -> filtered.sortedBy { it.name }
         }
     }
