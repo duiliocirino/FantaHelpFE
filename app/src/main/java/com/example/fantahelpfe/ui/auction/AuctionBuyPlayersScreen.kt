@@ -1,5 +1,6 @@
 package com.example.fantahelpfe.ui.auction
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -564,31 +565,48 @@ fun HybridExecutiveDashboardCard(
                             }
                         }
 
-                        // Projected Lineup Role Chips Preview
+                        // Projected Starting XI vs Bench Roster Breakdown
                         if (uiState.potentialSuggestedPlayers.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text("Projected Lineup Players:", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                uiState.potentialSuggestedPlayers.take(6).forEach { playerDto: PlayerReadDto ->
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            SuggestionRoleBadge(roleName = playerDto.role)
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                playerDto.name,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                fontWeight = if (playerDto.id == uiState.selectedPlayer?.id) FontWeight.Bold else FontWeight.Normal,
-                                                color = if (playerDto.id == uiState.selectedPlayer?.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                            )
-                                        }
-                                        if (playerDto.id == uiState.selectedPlayer?.id) {
-                                            Text("⭐️ New", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                                        }
+                            val (startersList, benchList) = remember(uiState.potentialSuggestedPlayers) {
+                                partitionStartersAndBench(uiState.potentialSuggestedPlayers)
+                            }
+
+                            if (startersList.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    "⚽ Projected Starting XI (${startersList.size} Starters):",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    startersList.forEach { playerDto ->
+                                        PlayerLineupRow(
+                                            playerDto = playerDto,
+                                            selectedPlayerId = uiState.selectedPlayer?.id,
+                                            currentBid = uiState.currentBidAmount
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (benchList.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    "🪑 Projected Bench Depth (${benchList.size} Players):",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    benchList.forEach { playerDto ->
+                                        PlayerLineupRow(
+                                            playerDto = playerDto,
+                                            selectedPlayerId = uiState.selectedPlayer?.id,
+                                            currentBid = uiState.currentBidAmount
+                                        )
                                     }
                                 }
                             }
@@ -598,6 +616,102 @@ fun HybridExecutiveDashboardCard(
             }
         }
     }
+}
+
+@Composable
+private fun PlayerLineupRow(
+    playerDto: PlayerReadDto,
+    selectedPlayerId: Int?,
+    currentBid: Int
+) {
+    val isTarget = playerDto.id == selectedPlayerId
+    val priceText = when {
+        isTarget -> "$currentBid CR (Bid)"
+        playerDto.price > 0 -> "${playerDto.price} CR"
+        playerDto.expectedPrice > 0 -> "${playerDto.expectedPrice} CR"
+        else -> "${playerDto.fvm} CR"
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                if (isTarget) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                else Color.Transparent,
+                shape = MaterialTheme.shapes.extraSmall
+            )
+            .padding(horizontal = 6.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+            SuggestionRoleBadge(roleName = playerDto.role)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                playerDto.name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isTarget) FontWeight.Bold else FontWeight.Medium,
+                color = if (isTarget) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+            )
+            if (isTarget) {
+                Spacer(modifier = Modifier.width(6.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = MaterialTheme.shapes.extraSmall
+                ) {
+                    Text(
+                        "⭐️ Target",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+                }
+            }
+        }
+        Text(
+            priceText,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+private fun partitionStartersAndBench(
+    players: List<PlayerReadDto>
+): Pair<List<PlayerReadDto>, List<PlayerReadDto>> {
+    if (players.isEmpty()) return Pair(emptyList(), emptyList())
+
+    val goalkeepers = players.filter { it.role.equals("P", ignoreCase = true) || it.role.startsWith("Port", ignoreCase = true) }
+        .sortedByDescending { it.expectedPerformance }
+    val defenders = players.filter { it.role.equals("D", ignoreCase = true) || it.role.startsWith("Dif", ignoreCase = true) }
+        .sortedByDescending { it.expectedPerformance }
+    val midfielders = players.filter { it.role.equals("C", ignoreCase = true) || it.role.startsWith("Centr", ignoreCase = true) }
+        .sortedByDescending { it.expectedPerformance }
+    val attackers = players.filter { it.role.equals("A", ignoreCase = true) || it.role.startsWith("Att", ignoreCase = true) }
+        .sortedByDescending { it.expectedPerformance }
+
+    val starterGk = goalkeepers.take(1)
+    val starterDef = defenders.take(4)
+    val starterMid = midfielders.take(4)
+    val starterAtt = attackers.take(2)
+
+    val starters = (starterGk + starterDef + starterMid + starterAtt)
+        .sortedBy { roleOrder(it.role) }
+
+    val starterIds = starters.map { it.id }.toSet()
+    val bench = players.filterNot { it.id in starterIds }
+        .sortedBy { roleOrder(it.role) }
+
+    return Pair(starters, bench)
+}
+
+private fun roleOrder(role: String): Int = when {
+    role.equals("P", ignoreCase = true) || role.startsWith("Port", ignoreCase = true) -> 1
+    role.equals("D", ignoreCase = true) || role.startsWith("Dif", ignoreCase = true) -> 2
+    role.equals("C", ignoreCase = true) || role.startsWith("Centr", ignoreCase = true) -> 3
+    role.equals("A", ignoreCase = true) || role.startsWith("Att", ignoreCase = true) -> 4
+    else -> 5
 }
 
 private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
