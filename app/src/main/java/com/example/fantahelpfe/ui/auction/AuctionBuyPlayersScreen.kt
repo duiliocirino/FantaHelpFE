@@ -527,7 +527,7 @@ fun HybridExecutiveDashboardCard(
                 }
 
                 // Expanded Tactical Breakdown Content
-                androidx.compose.animation.AnimatedVisibility(visible = expandedDetails) {
+                if (expandedDetails) {
                     Column(modifier = Modifier.padding(top = 8.dp)) {
                         Divider()
                         Spacer(modifier = Modifier.height(8.dp))

@@ -318,7 +318,8 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                 val delta = if (baseScore != null && potentialScore != null) potentialScore - baseScore else null
 
                 val basePlayers = firstResult?.suggestedPlayers ?: emptyList()
-                val potentialPlayers = firstResult?.potentialScore?.suggestedPlayers ?: emptyList()
+                val rawPotentialPlayers = firstResult?.potentialScore?.suggestedPlayers
+                val potentialPlayers = if (!rawPotentialPlayers.isNullOrEmpty()) rawPotentialPlayers else basePlayers
 
                 val isStarter = potentialPlayers.any { it.id == playerToConsider.id }
                 val displaced = basePlayers.firstOrNull { baseP ->
@@ -333,7 +334,7 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                         potentialOptimalScore = potentialScore,
                         convenienceScoreDelta = delta,
                         baseScoreDetail = firstResult?.score,
-                        potentialScoreDetail = firstResult?.potentialScore?.score,
+                        potentialScoreDetail = firstResult?.potentialScore?.score ?: firstResult?.score,
                         isStarterInSuggested = isStarter,
                         displacedPlayerName = displaced?.name,
                         creditsPerPointRatio = roi,
