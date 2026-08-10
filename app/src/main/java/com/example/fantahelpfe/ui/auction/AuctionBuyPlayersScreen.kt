@@ -656,14 +656,56 @@ fun HybridExecutiveDashboardCard(
                             }
                         }
 
-                        // Projected Starting XI vs Bench Roster Breakdown
-                        if (uiState.potentialSuggestedPlayers.isNotEmpty()) {
-                            val (startersList, benchList) = remember(uiState.potentialSuggestedPlayers) {
-                                partitionStartersAndBench(uiState.potentialSuggestedPlayers)
+                        // Dynamic 2/3 Tab Roster Switcher
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            FilterChip(
+                                selected = uiState.selectedRosterTab == RosterBreakdownTab.Potential,
+                                onClick = { buyPlayersViewModel.setRosterBreakdownTab(RosterBreakdownTab.Potential) },
+                                label = { Text("⚽ With $playerName", style = MaterialTheme.typography.labelSmall) },
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            if (uiState.hasDistinctPlanB) {
+                                FilterChip(
+                                    selected = uiState.selectedRosterTab == RosterBreakdownTab.DefaultBase,
+                                    onClick = { buyPlayersViewModel.setRosterBreakdownTab(RosterBreakdownTab.DefaultBase) },
+                                    label = { Text("📊 Default Plan", style = MaterialTheme.typography.labelSmall) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                FilterChip(
+                                    selected = uiState.selectedRosterTab == RosterBreakdownTab.PlanBWithout,
+                                    onClick = { buyPlayersViewModel.setRosterBreakdownTab(RosterBreakdownTab.PlanBWithout) },
+                                    label = { Text("🚫 Plan B", style = MaterialTheme.typography.labelSmall) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            } else {
+                                FilterChip(
+                                    selected = uiState.selectedRosterTab == RosterBreakdownTab.DefaultBase,
+                                    onClick = { buyPlayersViewModel.setRosterBreakdownTab(RosterBreakdownTab.DefaultBase) },
+                                    label = { Text("📊 Base Team", style = MaterialTheme.typography.labelSmall) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+
+                        // Roster Player Lineup Display for Selected Tab
+                        val activePlayerList = when (uiState.selectedRosterTab) {
+                            RosterBreakdownTab.Potential -> uiState.potentialSuggestedPlayers
+                            RosterBreakdownTab.DefaultBase, RosterBreakdownTab.PlanBWithout -> uiState.baseSuggestedPlayers
+                        }
+
+                        if (activePlayerList.isNotEmpty()) {
+                            val (startersList, benchList) = remember(activePlayerList) {
+                                partitionStartersAndBench(activePlayerList)
                             }
 
                             if (startersList.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     "⚽ Projected Starting XI (${startersList.size} Starters):",
                                     style = MaterialTheme.typography.titleSmall,

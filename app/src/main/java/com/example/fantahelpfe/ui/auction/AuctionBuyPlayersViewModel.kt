@@ -35,6 +35,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+enum class RosterBreakdownTab {
+    Potential,    // With Player @ Bid Price
+    DefaultBase,  // Default Plan with standard expected prices
+    PlanBWithout  // Plan B without Player
+}
+
 data class AuctionBuyPlayersUiState(
     val leagueId: Int,
     val leagueDetails: League? = null,
@@ -61,7 +67,10 @@ data class AuctionBuyPlayersUiState(
     val isStarterInSuggested: Boolean = false,
     val displacedPlayerName: String? = null,
     val creditsPerPointRatio: Double? = null,
+    val baseSuggestedPlayers: List<PlayerReadDto> = emptyList(),
     val potentialSuggestedPlayers: List<PlayerReadDto> = emptyList(),
+    val hasDistinctPlanB: Boolean = false,
+    val selectedRosterTab: RosterBreakdownTab = RosterBreakdownTab.Potential,
     val totalExpectedPrice: Int? = null,
     val isLoadingConvenienceScore: Boolean = false,
     val convenienceScoreError: String? = null,
@@ -265,6 +274,10 @@ class AuctionBuyPlayersViewModel @Inject constructor(
         onBidAmountChanged(newAmount.toString()) // Use existing handler
     }
 
+    fun setRosterBreakdownTab(tab: RosterBreakdownTab) {
+        _uiState.update { it.copy(selectedRosterTab = tab) }
+    }
+
     fun onTeamSelectedForAssignment(team: Team) {
         _uiState.update { it.copy(selectedTeamForAssignment = team) }
         // When team changes, we need to fetch its current roster for suggestions
@@ -340,6 +353,8 @@ class AuctionBuyPlayersViewModel @Inject constructor(
 
                 val totalExpCost = firstResult?.potentialScore?.totalExpectedPrice ?: firstResult?.totalExpectedPrice
 
+                val isInBaseOptimal = basePlayers.any { it.id == playerToConsider.id }
+
                 _uiState.update {
                     it.copy(
                         baseOptimalScore = baseScore,
@@ -350,7 +365,10 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                         isStarterInSuggested = isStarter,
                         displacedPlayerName = displaced?.name,
                         creditsPerPointRatio = roi,
+                        baseSuggestedPlayers = basePlayers,
                         potentialSuggestedPlayers = potentialPlayers,
+                        hasDistinctPlanB = isInBaseOptimal,
+                        selectedRosterTab = RosterBreakdownTab.Potential,
                         totalExpectedPrice = totalExpCost,
                         isLoadingConvenienceScore = false,
                         convenienceScoreError = if (isBudgetExceeded) "Bid exceeds remaining budget" else null

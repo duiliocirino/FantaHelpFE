@@ -123,4 +123,14 @@ public int? RecommendedMaxBid { get; set; }
 **Behavior**:
 Return the break-even maximum bid price alongside `PotentialScore`. The FE will display AI bidding advice to the user during live auctions (e.g. *"Your bid of 35 CR is 13 CR below your maximum profitable bid of 48 CR"*).
 
+---
+
+### 8. `TeamSuggestionService` — Base Score Candidate Exclusion for Auctioned Player
+
+**File**: `Fantahelp.API/Services/TeamSuggestionService.cs`
+
+**Concept**: When `auctionedPlayer` (`playerId`, `acquisitionPrice`) is specified in `SuggestionRequest`, the solver evaluates `potentialScore` WITH `auctionedPlayer` at `acquisitionPrice`. For the base `score` calculation, filter out `auctionedPlayer.playerId` from the available market candidate pool.
+
+**Benefit**: This ensures `score` represents the true Plan B benchmark optimal team **without the auctioned player**, making $\Delta = \text{PotentialScore} - \text{BaseScore}$ the exact net advantage of winning the auctioned player vs letting them go to a rival manager.
+
 
