@@ -1,6 +1,7 @@
 package com.example.fantahelpfe.data
 
 import android.util.Log
+import com.example.fantahelpfe.data.remote.dto.BudgetAllocation
 import com.example.fantahelpfe.data.remote.dto.LineUp
 import com.example.fantahelpfe.model.League
 import com.example.fantahelpfe.model.Player
@@ -97,14 +98,14 @@ class AuctionSessionManager @Inject constructor(
     }
 
     fun updateCreditsDistributionMultiplier(multiplier: Int) {
-        _settings.update { it.copy(creditsDistributionMultiplier = multiplier.coerceIn(0, 5)) }
+        _settings.update { it.copy(creditsDistributionMultiplier = multiplier.coerceIn(0, 20)) }
         saveSettings()
     }
 
     fun updateCreditsDistributionStrategy(multiplier: Int, budgetAllocation: BudgetAllocation) {
         _settings.update {
             it.copy(
-                creditsDistributionMultiplier = multiplier.coerceIn(0, 5),
+                creditsDistributionMultiplier = multiplier.coerceIn(0, 20),
                 budgetAllocation = budgetAllocation
             )
         }

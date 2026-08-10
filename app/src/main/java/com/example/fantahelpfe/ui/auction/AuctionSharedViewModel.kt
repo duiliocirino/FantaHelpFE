@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.fantahelpfe.data.AuctionSessionManager
 import com.example.fantahelpfe.data.AuctionSettings
 import com.example.fantahelpfe.data.DataRepository
+import com.example.fantahelpfe.data.remote.dto.BudgetAllocation
 import com.example.fantahelpfe.data.remote.dto.LineUp
 import com.example.fantahelpfe.model.League
 import com.example.fantahelpfe.model.Player

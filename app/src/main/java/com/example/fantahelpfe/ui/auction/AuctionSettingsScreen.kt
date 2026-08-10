@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.fantahelpfe.data.remote.dto.BudgetAllocation
 import com.example.fantahelpfe.data.remote.dto.LineUp
 import com.example.fantahelpfe.model.Player
 import com.example.fantahelpfe.utils.capitalizeFirstLetter
@@ -352,30 +353,35 @@ fun AuctionSettingsScreen(
                         StrategyPreset(
                             title = "🌟 Stars & Fillers (All-In Strikers)",
                             spreadPenalty = 0,
-                            budgetAllocation = BudgetAllocation(goalkeepers = 0.06, defenders = 0.25, midfielders = 0.50, attackers = 0.80),
+                            budgetAllocation = BudgetAllocation(
+                                goalkeepers = 0.06,
+                                defenders = 0.25,
+                                midfielders = 0.50,
+                                attackers = 0.80
+                            ),
                             description = "No variance penalty. Allows buying top-tier expensive superstars alongside cheap 1-CR fillers."
                         ),
                         StrategyPreset(
                             title = "⚡ Star-Oriented (Aggressive Attack)",
-                            spreadPenalty = 1,
+                            spreadPenalty = 2,
                             budgetAllocation = BudgetAllocation(goalkeepers = 0.08, defenders = 0.25, midfielders = 0.55, attackers = 0.70),
                             description = "Low variance penalty. Prioritizes high-scoring forwards while keeping slight spending balance."
                         ),
                         StrategyPreset(
                             title = "⚖️ Standard Balanced (Recommended)",
-                            spreadPenalty = 2,
+                            spreadPenalty = 4,
                             budgetAllocation = BudgetAllocation(goalkeepers = 0.10, defenders = 0.30, midfielders = 0.60, attackers = 0.60),
                             description = "Default strategy balancing top starters with solid depth across all 4 squad roles."
                         ),
                         StrategyPreset(
                             title = "🛡️ Defense Modifier & Solid Depth",
-                            spreadPenalty = 3,
+                            spreadPenalty = 6,
                             budgetAllocation = BudgetAllocation(goalkeepers = 0.12, defenders = 0.40, midfielders = 0.65, attackers = 0.50),
                             description = "Allocates more budget to defenders and midfielders for defense modifier points and depth."
                         ),
                         StrategyPreset(
                             title = "🏦 Uniform Price Spread (Low Risk)",
-                            spreadPenalty = 5,
+                            spreadPenalty = 10,
                             budgetAllocation = BudgetAllocation(goalkeepers = 0.15, defenders = 0.45, midfielders = 0.60, attackers = 0.45),
                             description = "Aggressively penalizes price gaps within roles, building a uniform, deep 25-man squad."
                         )
