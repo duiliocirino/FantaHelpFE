@@ -344,40 +344,7 @@ fun AuctionBuyPlayersScreen(
                     )
                 }
                 uiState.baseOptimalScore != null && uiState.potentialOptimalScore != null -> {
-                    val delta = uiState.convenienceScoreDelta ?: 0.0
-                    val deltaColor = when {
-                        delta > 1.0 -> Color(0xFF4CAF50) // Green
-                        delta < -1.0 -> Color(0xFFF44336) // Red
-                        else -> LocalContentColor.current
-                    }
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            "Projected Optimal Score (Current Team): ${
-                                String.format(
-                                    "%.1f",
-                                    uiState.baseOptimalScore!!
-                                )
-                            } pts", style = MaterialTheme.typography.bodyLarge
-                        )
-                        Text(
-                            "Projected Optimal Score (With ${uiState.selectedPlayer!!.name}): ${
-                                String.format(
-                                    "%.1f",
-                                    uiState.potentialOptimalScore!!
-                                )
-                            } pts", style = MaterialTheme.typography.bodyLarge
-                        )
-                        Text(
-                            "Advantage: ${String.format("%+.1f", delta)} pts",
-                            color = deltaColor,
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
+                    HybridExecutiveDashboardCard(uiState = uiState)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -435,3 +402,195 @@ fun AuctionBuyPlayersScreen(
     }
     }
 }
+
+@Composable
+fun HybridExecutiveDashboardCard(
+    uiState: AuctionBuyPlayersUiState
+) {
+    val delta = uiState.convenienceScoreDelta ?: 0.0
+    val playerName = uiState.selectedPlayer?.name ?: "Player"
+    var expandedDetails by remember { mutableStateOf(false) }
+
+    val (statusTitle, statusSubtitle, statusBgColor, statusTextColor) = when {
+        delta >= 3.0 -> Quadruple("🚀 MUST BUY — TOP VALUE UPGRADE", "Huge point gain for your lineup!", Color(0xFF1B5E20), Color.White)
+        delta >= 1.0 -> Quadruple("👍 SOLID UPGRADE", "Clear starter quality addition", Color(0xFF2E7D32), Color.White)
+        delta >= 0.0 -> Quadruple("⚠️ MARGINAL GAIN", "Minor squad depth improvement", Color(0xFFF57F17), Color.Black)
+        else -> Quadruple("🛑 OVERBID / NO GAIN", "Point gain is negative or budget depleted", Color(0xFFC62828), Color.White)
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    ) {
+        Column {
+            // Recommendation Status Banner
+            Surface(
+                color = statusBgColor,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                    Text(statusTitle, color = statusTextColor, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(statusSubtitle, color = statusTextColor.copy(alpha = 0.9f), style = MaterialTheme.typography.bodySmall)
+                }
+            }
+
+            Column(modifier = Modifier.padding(16.dp)) {
+                // Side-by-Side Hero Advantage Callout
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("Net Score Gain", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            String.format("%+.1f pts", delta),
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = if (delta >= 0) Color(0xFF388E3C) else Color(0xFFD32F2F)
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("Projected Score", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            Text(
+                                String.format("%.1f", uiState.baseOptimalScore ?: 0.0),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(" ➔ ", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                String.format("%.1f pts", uiState.potentialOptimalScore ?: 0.0),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Divider()
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Quick Roster & Financial Insights
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Starter vs Bench Badge
+                    Surface(
+                        color = if (uiState.isStarterInSuggested) Color(0xFFFFB74D) else MaterialTheme.colorScheme.surface,
+                        shape = MaterialTheme.shapes.extraSmall
+                    ) {
+                        Text(
+                            text = if (uiState.isStarterInSuggested) "⭐️ Starter XI" else "🪑 Bench Depth",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            color = if (uiState.isStarterInSuggested) Color.Black else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    // Displaced Player or ROI Ratio
+                    if (uiState.displacedPlayerName != null) {
+                        Text(
+                            "Replaces: ${uiState.displacedPlayerName}",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else if (uiState.creditsPerPointRatio != null) {
+                        Text(
+                            String.format("Efficiency: %.1f CR/pt", uiState.creditsPerPointRatio),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Expandable Tactical Breakdown Toggle
+                TextButton(
+                    onClick = { expandedDetails = !expandedDetails },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text(
+                        if (expandedDetails) "Hide Tactical Breakdown ▲" else "Show Tactical Breakdown ▼",
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
+
+                // Expanded Tactical Breakdown Content
+                androidx.compose.animation.AnimatedVisibility(visible = expandedDetails) {
+                    Column(modifier = Modifier.padding(top = 8.dp)) {
+                        Divider()
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Score Category Breakdown Grid
+                        Text("Score Breakdown Comparison:", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("Category", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("Starters Score", style = MaterialTheme.typography.bodySmall)
+                                Text("Bench Score", style = MaterialTheme.typography.bodySmall)
+                                Text("Penalty Score", style = MaterialTheme.typography.bodySmall)
+                            }
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("Current", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(String.format("%.1f", uiState.baseScoreDetail?.starterScore ?: 0.0), style = MaterialTheme.typography.bodySmall)
+                                Text(String.format("%.1f", uiState.baseScoreDetail?.benchScore ?: 0.0), style = MaterialTheme.typography.bodySmall)
+                                Text(String.format("%.1f", uiState.baseScoreDetail?.penaltyScore ?: 0.0), style = MaterialTheme.typography.bodySmall)
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("With $playerName", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                Text(String.format("%.1f", uiState.potentialScoreDetail?.starterScore ?: 0.0), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                                Text(String.format("%.1f", uiState.potentialScoreDetail?.benchScore ?: 0.0), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                                Text(String.format("%.1f", uiState.potentialScoreDetail?.penaltyScore ?: 0.0), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        // Projected Lineup Role Chips Preview
+                        if (uiState.potentialSuggestedPlayers.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text("Projected Lineup Players:", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                uiState.potentialSuggestedPlayers.take(6).forEach { playerDto ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            SuggestionRoleBadge(roleName = playerDto.role)
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                playerDto.name,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                fontWeight = if (playerDto.id == uiState.selectedPlayer?.id) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (playerDto.id == uiState.selectedPlayer?.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                        if (playerDto.id == uiState.selectedPlayer?.id) {
+                                            Text("⭐️ New", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)

@@ -107,10 +107,20 @@ public class SuggestionResult
 
 ---
 
-## Impact
+## Future Enhancements / Feature Backlog 🔮
 
-Items 1–3 were **hard crashes** on the FE side (Moshi `JsonDataException`) for every league/team/player fetch. Now resolved.
+### 7. `SuggestionResult` — `RecommendedMaxBid` Break-Even Calculation
 
-Items 4 & 5 are currently in progress on the BE. FE DTO (`SuggestionResult.kt`) and ViewModel (`AuctionBuyPlayersViewModel.kt`) are updated with `potentialScore: Score?` to support this unified contract natively with backward compatibility fallback.
+**File**: `Fantahelp.API/Models/Dtos/Read/SuggestionResult.cs` & `TeamSuggestionService.cs`
+
+**Concept**: When `auctionedPlayer` is provided in `POST /api/teams/getOptimal`, compute the maximum acquisition price (`RecommendedMaxBid`) before the net point advantage turns neutral or negative due to remaining budget penalties.
+
+**Proposed DTO Field**:
+```csharp
+public int? RecommendedMaxBid { get; set; }
+```
+
+**Behavior**:
+Return the break-even maximum bid price alongside `PotentialScore`. The FE will display AI bidding advice to the user during live auctions (e.g. *"Your bid of 35 CR is 13 CR below your maximum profitable bid of 48 CR"*).
 
 

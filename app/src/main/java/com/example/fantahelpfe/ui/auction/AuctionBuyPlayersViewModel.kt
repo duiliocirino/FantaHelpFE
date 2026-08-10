@@ -54,6 +54,12 @@ data class AuctionBuyPlayersUiState(
     val baseOptimalScore: Double? = null,
     val potentialOptimalScore: Double? = null,
     val convenienceScoreDelta: Double? = null,
+    val baseScoreDetail: Score? = null,
+    val potentialScoreDetail: Score? = null,
+    val isStarterInSuggested: Boolean = false,
+    val displacedPlayerName: String? = null,
+    val creditsPerPointRatio: Double? = null,
+    val potentialSuggestedPlayers: List<PlayerReadDto> = emptyList(),
     val isLoadingConvenienceScore: Boolean = false,
     val convenienceScoreError: String? = null,
 
@@ -307,11 +313,29 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                 val potentialScore = firstResult?.potentialScore?.score?.totalScore
                 val isBudgetExceeded = firstResult != null && firstResult.potentialScore == null
 
+                val delta = if (baseScore != null && potentialScore != null) potentialScore - baseScore else null
+
+                val basePlayers = firstResult?.suggestedPlayers ?: emptyList()
+                val potentialPlayers = firstResult?.potentialScore?.suggestedPlayers ?: emptyList()
+
+                val isStarter = potentialPlayers.any { it.id == playerToConsider.id }
+                val displaced = basePlayers.firstOrNull { baseP ->
+                    potentialPlayers.none { it.id == baseP.id }
+                }
+
+                val roi = if (delta != null && delta > 0) bidForPlayer / delta else null
+
                 _uiState.update {
                     it.copy(
                         baseOptimalScore = baseScore,
                         potentialOptimalScore = potentialScore,
-                        convenienceScoreDelta = if (baseScore != null && potentialScore != null) potentialScore - baseScore else null,
+                        convenienceScoreDelta = delta,
+                        baseScoreDetail = firstResult?.score,
+                        potentialScoreDetail = firstResult?.potentialScore?.score,
+                        isStarterInSuggested = isStarter,
+                        displacedPlayerName = displaced?.name,
+                        creditsPerPointRatio = roi,
+                        potentialSuggestedPlayers = potentialPlayers,
                         isLoadingConvenienceScore = false,
                         convenienceScoreError = if (isBudgetExceeded) "Bid exceeds remaining budget" else null
                     )
@@ -320,11 +344,9 @@ class AuctionBuyPlayersViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: AppError) {
-                // ... error handling ...
                 Log.e("AuctionBuyVM", "Error calculating score: ${e.displayMessage}")
                 _uiState.update { it.copy(isLoadingConvenienceScore = false, convenienceScoreError = e.displayMessage ?: "Could not calculate score advantage.") }
             } catch (e: Exception) {
-                // ... error handling ...
                 Log.e("AuctionBuyVM", "Error calculating score: ${e.message}")
                 _uiState.update { it.copy(isLoadingConvenienceScore = false, convenienceScoreError = "Error calculating score.") }
             }
@@ -336,6 +358,12 @@ class AuctionBuyPlayersViewModel @Inject constructor(
             baseOptimalScore = null,
             potentialOptimalScore = null,
             convenienceScoreDelta = null,
+            baseScoreDetail = null,
+            potentialScoreDetail = null,
+            isStarterInSuggested = false,
+            displacedPlayerName = null,
+            creditsPerPointRatio = null,
+            potentialSuggestedPlayers = emptyList(),
             isLoadingConvenienceScore = false,
             convenienceScoreError = null
         )}
