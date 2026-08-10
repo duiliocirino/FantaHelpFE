@@ -324,6 +324,8 @@ class AuctionBuyPlayersViewModel @Inject constructor(
             return
         }
 
+        val settings = auctionSessionManager.settings.value
+
         convenienceScoreJob?.cancel()
         convenienceScoreJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoadingConvenienceScore = true, /* ... */) }
@@ -339,7 +341,8 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                     auctionedPlayer = AuctionedPlayerInfo(
                         playerId = playerToConsider.id,
                         acquisitionPrice = bidForPlayer
-                    )
+                    ),
+                    budgetAllocation = settings.budgetAllocation
                 )
 
                 val results = repository.getSuggestion(potentialRequest)

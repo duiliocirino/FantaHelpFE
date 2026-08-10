@@ -71,6 +71,10 @@ class AuctionSharedViewModel @Inject constructor(
         auctionSessionManager.updateCreditsDistributionMultiplier(multiplier)
     }
 
+    fun updateCreditsDistributionStrategy(multiplier: Int, budgetAllocation: BudgetAllocation) {
+        auctionSessionManager.updateCreditsDistributionStrategy(multiplier, budgetAllocation)
+    }
+
     fun updateLineUp(lineUp: LineUp) {
         auctionSessionManager.updateLineUp(lineUp)
     }

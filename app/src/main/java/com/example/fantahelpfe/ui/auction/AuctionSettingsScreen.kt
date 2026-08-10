@@ -208,79 +208,250 @@ fun AuctionSettingsScreen(
                 }
             }
 
+            // LineUp Section
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                Divider()
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Target Formation LineUp ⚽", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Select a standard fantasy football formation preset.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                val formationPresets = remember {
+                    listOf(
+                        LineUpPreset("4-3-3", LineUp(keepers = 1, defenders = 4, midfielders = 3, attackers = 3)),
+                        LineUpPreset("3-4-3", LineUp(keepers = 1, defenders = 3, midfielders = 4, attackers = 3)),
+                        LineUpPreset("4-4-2", LineUp(keepers = 1, defenders = 4, midfielders = 4, attackers = 2)),
+                        LineUpPreset("3-5-2", LineUp(keepers = 1, defenders = 3, midfielders = 5, attackers = 2)),
+                        LineUpPreset("4-5-1", LineUp(keepers = 1, defenders = 4, midfielders = 5, attackers = 1)),
+                        LineUpPreset("5-3-2", LineUp(keepers = 1, defenders = 5, midfielders = 3, attackers = 2)),
+                        LineUpPreset("5-4-1", LineUp(keepers = 1, defenders = 5, midfielders = 4, attackers = 1))
+                    )
+                }
+
+                var isCustomLineup by remember { mutableStateOf(false) }
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        formationPresets.take(4).forEach { preset ->
+                            val isSelected = !isCustomLineup && settings.lineUp == preset.lineUp
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    isCustomLineup = false
+                                    sharedViewModel.updateLineUp(preset.lineUp)
+                                },
+                                label = { Text(preset.name, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        formationPresets.drop(4).forEach { preset ->
+                            val isSelected = !isCustomLineup && settings.lineUp == preset.lineUp
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    isCustomLineup = false
+                                    sharedViewModel.updateLineUp(preset.lineUp)
+                                },
+                                label = { Text(preset.name, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        FilterChip(
+                            selected = isCustomLineup,
+                            onClick = { isCustomLineup = !isCustomLineup },
+                            label = { Text("Custom", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    if (isCustomLineup) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = keepersInput,
+                                onValueChange = {
+                                    keepersInput = it
+                                    it.toIntOrNull()?.let { num -> sharedViewModel.updateLineUp(settings.lineUp.copy(keepers = num)) }
+                                },
+                                label = { Text("GK") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = defendersInput,
+                                onValueChange = {
+                                    defendersInput = it
+                                    it.toIntOrNull()?.let { num -> sharedViewModel.updateLineUp(settings.lineUp.copy(defenders = num)) }
+                                },
+                                label = { Text("DEF") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = midfieldersInput,
+                                onValueChange = {
+                                    midfieldersInput = it
+                                    it.toIntOrNull()?.let { num -> sharedViewModel.updateLineUp(settings.lineUp.copy(midfielders = num)) }
+                                },
+                                label = { Text("MID") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = attackersInput,
+                                onValueChange = {
+                                    attackersInput = it
+                                    it.toIntOrNull()?.let { num -> sharedViewModel.updateLineUp(settings.lineUp.copy(attackers = num)) }
+                                },
+                                label = { Text("ATT") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+            }
+
             // Multiplier Section
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 Divider()
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Credits Distribution Multiplier", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                OutlinedTextField(
-                    value = multiplierInput,
-                    onValueChange = {
-                        multiplierInput = it
-                        it.toIntOrNull()?.let { num ->
-                            sharedViewModel.updateCreditsDistributionMultiplier(num)
-                        }
-                    },
-                    label = { Text("Multiplier (e.g., 1, 5, 10)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
+                Text("Credits Budget Strategy 💰", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Choose how AI algorithms distribute credits and penalize price variance across starters.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            }
+                Spacer(modifier = Modifier.height(12.dp))
 
-            // LineUp Section
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("LineUp Target Roster", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = keepersInput,
-                        onValueChange = {
-                            keepersInput = it
-                            it.toIntOrNull()?.let { num -> sharedViewModel.updateLineUp(settings.lineUp.copy(keepers = num)) }
-                        },
-                        label = { Text("GK") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
+                val strategyPresets = remember {
+                    listOf(
+                        StrategyPreset(
+                            title = "🌟 Stars & Fillers (All-In Strikers)",
+                            spreadPenalty = 0,
+                            budgetAllocation = BudgetAllocation(goalkeepers = 0.06, defenders = 0.25, midfielders = 0.50, attackers = 0.80),
+                            description = "No variance penalty. Allows buying top-tier expensive superstars alongside cheap 1-CR fillers."
+                        ),
+                        StrategyPreset(
+                            title = "⚡ Star-Oriented (Aggressive Attack)",
+                            spreadPenalty = 1,
+                            budgetAllocation = BudgetAllocation(goalkeepers = 0.08, defenders = 0.25, midfielders = 0.55, attackers = 0.70),
+                            description = "Low variance penalty. Prioritizes high-scoring forwards while keeping slight spending balance."
+                        ),
+                        StrategyPreset(
+                            title = "⚖️ Standard Balanced (Recommended)",
+                            spreadPenalty = 2,
+                            budgetAllocation = BudgetAllocation(goalkeepers = 0.10, defenders = 0.30, midfielders = 0.60, attackers = 0.60),
+                            description = "Default strategy balancing top starters with solid depth across all 4 squad roles."
+                        ),
+                        StrategyPreset(
+                            title = "🛡️ Defense Modifier & Solid Depth",
+                            spreadPenalty = 3,
+                            budgetAllocation = BudgetAllocation(goalkeepers = 0.12, defenders = 0.40, midfielders = 0.65, attackers = 0.50),
+                            description = "Allocates more budget to defenders and midfielders for defense modifier points and depth."
+                        ),
+                        StrategyPreset(
+                            title = "🏦 Uniform Price Spread (Low Risk)",
+                            spreadPenalty = 5,
+                            budgetAllocation = BudgetAllocation(goalkeepers = 0.15, defenders = 0.45, midfielders = 0.60, attackers = 0.45),
+                            description = "Aggressively penalizes price gaps within roles, building a uniform, deep 25-man squad."
+                        )
                     )
-                    OutlinedTextField(
-                        value = defendersInput,
-                        onValueChange = {
-                            defendersInput = it
-                            it.toIntOrNull()?.let { num -> sharedViewModel.updateLineUp(settings.lineUp.copy(defenders = num)) }
-                        },
-                        label = { Text("DEF") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
-                    )
-                    OutlinedTextField(
-                        value = midfieldersInput,
-                        onValueChange = {
-                            midfieldersInput = it
-                            it.toIntOrNull()?.let { num -> sharedViewModel.updateLineUp(settings.lineUp.copy(midfielders = num)) }
-                        },
-                        label = { Text("MID") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
-                    )
-                    OutlinedTextField(
-                        value = attackersInput,
-                        onValueChange = {
-                            attackersInput = it
-                            it.toIntOrNull()?.let { num -> sharedViewModel.updateLineUp(settings.lineUp.copy(attackers = num)) }
-                        },
-                        label = { Text("ATT") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
-                    )
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    strategyPresets.forEach { preset ->
+                        val isSelected = settings.creditsDistributionMultiplier == preset.spreadPenalty &&
+                                settings.budgetAllocation == preset.budgetAllocation
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    sharedViewModel.updateCreditsDistributionStrategy(preset.spreadPenalty, preset.budgetAllocation)
+                                },
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                                else MaterialTheme.colorScheme.surface
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 3.dp else 1.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        preset.title,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Surface(
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                        shape = MaterialTheme.shapes.extraSmall
+                                    ) {
+                                        Text(
+                                            "Spread: ${preset.spreadPenalty}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    preset.description,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    "Caps ➔ GK: ${(preset.budgetAllocation.goalkeepers * 100).toInt()}% · DEF: ${(preset.budgetAllocation.defenders * 100).toInt()}% · MID: ${(preset.budgetAllocation.midfielders * 100).toInt()}% · ATT: ${(preset.budgetAllocation.attackers * 100).toInt()}%",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
+
+private data class LineUpPreset(
+    val name: String,
+    val lineUp: LineUp
+)
+
+private data class StrategyPreset(
+    val title: String,
+    val spreadPenalty: Int,
+    val budgetAllocation: com.example.fantahelpfe.data.remote.dto.BudgetAllocation,
+    val description: String
+)
 
 @Composable
 private fun RoleBadge(roleName: String) {

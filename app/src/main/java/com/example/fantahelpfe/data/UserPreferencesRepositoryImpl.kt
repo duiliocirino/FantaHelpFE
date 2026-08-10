@@ -1,6 +1,7 @@
 package com.example.fantahelpfe.data
 
 import android.content.Context
+import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -34,7 +35,7 @@ class UserPreferencesRepositoryImpl @Inject constructor(
             } else {
                 favsString.split(",").mapNotNull { it.toIntOrNull() }
             }
-            val multiplier = prefs[MULTIPLIER_KEY] ?: 1
+            val multiplier = prefs[MULTIPLIER_KEY] ?: 2
             val defenders = prefs[LINEUP_DEFENDERS_KEY] ?: 4
             val midfielders = prefs[LINEUP_MIDFIELDERS_KEY] ?: 3
             val attackers = prefs[LINEUP_ATTACKERS_KEY] ?: 3
@@ -54,7 +55,7 @@ class UserPreferencesRepositoryImpl @Inject constructor(
         } else {
             favsString.split(",").mapNotNull { it.toIntOrNull() }
         }
-        val multiplier = prefs[MULTIPLIER_KEY] ?: 1
+        val multiplier = prefs[MULTIPLIER_KEY] ?: 2
         val defenders = prefs[LINEUP_DEFENDERS_KEY] ?: 4
         val midfielders = prefs[LINEUP_MIDFIELDERS_KEY] ?: 3
         val attackers = prefs[LINEUP_ATTACKERS_KEY] ?: 3

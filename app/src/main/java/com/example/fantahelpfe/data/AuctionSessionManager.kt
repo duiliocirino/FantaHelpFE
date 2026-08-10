@@ -97,7 +97,17 @@ class AuctionSessionManager @Inject constructor(
     }
 
     fun updateCreditsDistributionMultiplier(multiplier: Int) {
-        _settings.update { it.copy(creditsDistributionMultiplier = multiplier.coerceAtLeast(1)) }
+        _settings.update { it.copy(creditsDistributionMultiplier = multiplier.coerceIn(0, 5)) }
+        saveSettings()
+    }
+
+    fun updateCreditsDistributionStrategy(multiplier: Int, budgetAllocation: BudgetAllocation) {
+        _settings.update {
+            it.copy(
+                creditsDistributionMultiplier = multiplier.coerceIn(0, 5),
+                budgetAllocation = budgetAllocation
+            )
+        }
         saveSettings()
     }
 

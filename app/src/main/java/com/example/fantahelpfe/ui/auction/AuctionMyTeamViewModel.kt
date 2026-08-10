@@ -150,7 +150,8 @@ class AuctionMyTeamViewModel @Inject constructor(
                     numTeams = 1,
                     favoritePlayerIds = settings.globalFavoritePlayerIds,
                     lineUp = settings.lineUp,
-                    creditsDistribution = settings.creditsDistributionMultiplier
+                    creditsDistribution = settings.creditsDistributionMultiplier,
+                    budgetAllocation = settings.budgetAllocation
                 )
                 val results = repository.getSuggestion(request)
                 _uiState.update { it.copy(suggestionResults = results, isLoadingSuggestion = false) }

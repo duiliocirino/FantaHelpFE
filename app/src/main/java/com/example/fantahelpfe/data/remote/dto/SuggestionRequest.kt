@@ -8,6 +8,6 @@ data class SuggestionRequest(
     @Json(name = "favoritePlayerIds") val favoritePlayerIds: List<Int> = emptyList(),
     @Json(name = "lineUp") val lineUp: LineUp,
     @Json(name = "creditsDistribution") val creditsDistribution: Int = 1,
-    @Json(name = "auctionedPlayer") val auctionedPlayer: AuctionedPlayerInfo? = null // THE NEW FIELD
-    // Add other future options as needed
+    @Json(name = "auctionedPlayer") val auctionedPlayer: AuctionedPlayerInfo? = null,
+    @Json(name = "budgetAllocation") val budgetAllocation: BudgetAllocation? = null
 )
