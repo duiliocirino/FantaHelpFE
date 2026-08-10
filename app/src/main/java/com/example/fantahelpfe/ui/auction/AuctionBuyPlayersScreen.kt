@@ -404,7 +404,10 @@ fun AuctionBuyPlayersScreen(
                     )
                 }
                 uiState.baseOptimalScore != null && uiState.potentialOptimalScore != null -> {
-                    HybridExecutiveDashboardCard(uiState = uiState)
+                    HybridExecutiveDashboardCard(
+                        uiState = uiState,
+                        onSelectRosterTab = buyPlayersViewModel::setRosterBreakdownTab
+                    )
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -465,7 +468,8 @@ fun AuctionBuyPlayersScreen(
 
 @Composable
 fun HybridExecutiveDashboardCard(
-    uiState: AuctionBuyPlayersUiState
+    uiState: AuctionBuyPlayersUiState,
+    onSelectRosterTab: (RosterBreakdownTab) -> Unit
 ) {
     val delta = uiState.convenienceScoreDelta ?: 0.0
     val playerName = uiState.selectedPlayer?.name ?: "Player"
@@ -673,7 +677,7 @@ fun HybridExecutiveDashboardCard(
                         ) {
                             FilterChip(
                                 selected = uiState.selectedRosterTab == RosterBreakdownTab.Potential,
-                                onClick = { buyPlayersViewModel.setRosterBreakdownTab(RosterBreakdownTab.Potential) },
+                                onClick = { onSelectRosterTab(RosterBreakdownTab.Potential) },
                                 label = { Text("⚽ With $playerName", style = MaterialTheme.typography.labelSmall) },
                                 modifier = Modifier.weight(1f)
                             )
@@ -681,20 +685,20 @@ fun HybridExecutiveDashboardCard(
                             if (uiState.hasDistinctPlanB) {
                                 FilterChip(
                                     selected = uiState.selectedRosterTab == RosterBreakdownTab.DefaultBase,
-                                    onClick = { buyPlayersViewModel.setRosterBreakdownTab(RosterBreakdownTab.DefaultBase) },
+                                    onClick = { onSelectRosterTab(RosterBreakdownTab.DefaultBase) },
                                     label = { Text("📊 Default Plan", style = MaterialTheme.typography.labelSmall) },
                                     modifier = Modifier.weight(1f)
                                 )
                                 FilterChip(
                                     selected = uiState.selectedRosterTab == RosterBreakdownTab.PlanBWithout,
-                                    onClick = { buyPlayersViewModel.setRosterBreakdownTab(RosterBreakdownTab.PlanBWithout) },
+                                    onClick = { onSelectRosterTab(RosterBreakdownTab.PlanBWithout) },
                                     label = { Text("🚫 Plan B", style = MaterialTheme.typography.labelSmall) },
                                     modifier = Modifier.weight(1f)
                                 )
                             } else {
                                 FilterChip(
                                     selected = uiState.selectedRosterTab == RosterBreakdownTab.DefaultBase,
-                                    onClick = { buyPlayersViewModel.setRosterBreakdownTab(RosterBreakdownTab.DefaultBase) },
+                                    onClick = { onSelectRosterTab(RosterBreakdownTab.DefaultBase) },
                                     label = { Text("📊 Base Team", style = MaterialTheme.typography.labelSmall) },
                                     modifier = Modifier.weight(1f)
                                 )
