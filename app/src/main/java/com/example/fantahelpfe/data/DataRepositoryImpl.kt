@@ -109,7 +109,11 @@ class DataRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getAvailablePlayersForLeague(leagueId: Int): List<Player> {
-        return safeApiCall { apiService.getAvailablePlayersForLeague(leagueId).toDomainPlayers() }
+        return safeApiCall {
+            val dtos = apiService.getAvailablePlayersForLeague(leagueId)
+            Log.d("DataRepository", "Fetched ${dtos.size} available players for league $leagueId. Sample DTO: ${dtos.firstOrNull()}")
+            dtos.toDomainPlayers()
+        }
     }
 
     override suspend fun searchPlayer(currentLeagueId: Int, query: String): List<Player> {

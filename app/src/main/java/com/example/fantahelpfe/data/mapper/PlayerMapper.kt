@@ -6,12 +6,35 @@ import com.example.fantahelpfe.model.Player
 import com.example.fantahelpfe.model.PlayerRole
 import kotlin.text.uppercase
 
-fun PlayerReadDto.toDomain(): Player {
-    val rawReg = this.regularity ?: this.regularness
-    val parsedRegularness = when {
-        rawReg > 0.0 && rawReg <= 1.0 -> (rawReg * 100).toInt()
-        else -> rawReg.toInt()
+private fun parseRegularnessValue(vararg values: Any?): Int {
+    for (raw in values) {
+        if (raw == null) continue
+        when (raw) {
+            is Number -> {
+                val d = raw.toDouble()
+                if (d > 0.0) {
+                    return if (d <= 1.0) (d * 100).toInt() else d.toInt()
+                }
+            }
+            is String -> {
+                val cleaned = raw.replace("%", "").trim().replace(",", ".")
+                val d = cleaned.toDoubleOrNull()
+                if (d != null && d > 0.0) {
+                    return if (d <= 1.0) (d * 100).toInt() else d.toInt()
+                }
+            }
+        }
     }
+    return 0
+}
+
+fun PlayerReadDto.toDomain(): Player {
+    val parsedRegularness = parseRegularnessValue(
+        this.regularity,
+        this.regularness,
+        this.titolarita,
+        this.titolaritaPercentage
+    )
 
     return Player(
         id = this.id,
