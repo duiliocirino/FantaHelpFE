@@ -444,30 +444,33 @@ fun HybridExecutiveDashboardCard(
             }
 
             Column(modifier = Modifier.padding(16.dp)) {
-                // Side-by-Side Hero Advantage Callout
+                // 3-Column Performance & Financial Metric Grid
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
-                        Text("Net Score Gain", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    // Col 1: Net Gain
+                    Column(horizontalAlignment = Alignment.Start) {
+                        Text("Net Gain", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
                             String.format("%+.1f pts", delta),
-                            style = MaterialTheme.typography.headlineLarge,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = if (delta >= 0) Color(0xFF388E3C) else Color(0xFFD32F2F)
                         )
                     }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text("Projected Score", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                    // Col 2: Projected Score
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Projected Score", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Row(verticalAlignment = Alignment.Bottom) {
                             Text(
                                 String.format("%.1f", uiState.baseOptimalScore ?: 0.0),
-                                style = MaterialTheme.typography.titleMedium,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Text(" ➔ ", style = MaterialTheme.typography.titleMedium)
+                            Text(" ➔ ", style = MaterialTheme.typography.bodyMedium)
                             Text(
                                 String.format("%.1f pts", uiState.potentialOptimalScore ?: 0.0),
                                 style = MaterialTheme.typography.titleMedium,
@@ -476,50 +479,48 @@ fun HybridExecutiveDashboardCard(
                             )
                         }
                     }
+
+                    // Col 3: Rem. Budget
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("Rem. Budget", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        val remainingAfter = (uiState.selectedTeamForAssignment?.remainingBudget ?: 0) - uiState.currentBidAmount
+                        val isDeficit = remainingAfter < 0
+                        Text(
+                            "$remainingAfter CR",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isDeficit) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
                 Divider()
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Quick Roster & Financial Insights
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                // Quick Roster Insights Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Starter vs Bench Badge
+                    Surface(
+                        color = if (uiState.isStarterInSuggested) Color(0xFFFFB74D) else MaterialTheme.colorScheme.surface,
+                        shape = MaterialTheme.shapes.extraSmall
                     ) {
-                        // Starter vs Bench Badge
-                        Surface(
-                            color = if (uiState.isStarterInSuggested) Color(0xFFFFB74D) else MaterialTheme.colorScheme.surface,
-                            shape = MaterialTheme.shapes.extraSmall
-                        ) {
-                            Text(
-                                text = if (uiState.isStarterInSuggested) "⭐️ Starter XI" else "🪑 Bench Depth",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                color = if (uiState.isStarterInSuggested) Color.Black else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
-                        // Remaining Budget After Bid (Main Card Section)
-                        uiState.selectedTeamForAssignment?.let { team ->
-                            val remainingAfter = team.remainingBudget - uiState.currentBidAmount
-                            val isDeficit = remainingAfter < 0
-                            Text(
-                                "Rem. Budget: $remainingAfter CR",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isDeficit) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
-                            )
-                        }
+                        Text(
+                            text = if (uiState.isStarterInSuggested) "⭐️ Starter XI" else "🪑 Bench Depth",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            color = if (uiState.isStarterInSuggested) Color.Black else MaterialTheme.colorScheme.onSurface
+                        )
                     }
 
                     if (uiState.displacedPlayerName != null) {
-                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            "Replaces in Starters: ${uiState.displacedPlayerName}",
+                            "Replaces: ${uiState.displacedPlayerName}",
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
