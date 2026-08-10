@@ -17,8 +17,8 @@ import com.example.fantahelpfe.model.TeamPlayer
 import com.example.fantahelpfe.ui.components.ErrorState
 import com.example.fantahelpfe.ui.components.LoadingState
 import com.example.fantahelpfe.data.mapper.toDomainPlayers
-import com.example.fantahelpfe.model.Player
-import com.example.fantahelpfe.utils.capitalizeFirstLetter
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,39 +78,67 @@ fun AuctionMyTeamScreen(
                     .padding(16.dp)
                     .fillMaxSize()
             ) {
-                // Team Selector
+                // Team Selector (Horizontal Scrollable for N-Teams)
                 if (uiState.teams.size > 1) {
-                    Text("Select Team:", style = MaterialTheme.typography.titleSmall)
-                    Row(
+                    LazyRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(vertical = 2.dp)
                     ) {
-                        uiState.teams.forEach { team ->
+                        items(uiState.teams, key = { it.id }) { team ->
                             FilterChip(
                                 selected = uiState.selectedTeam?.id == team.id,
                                 onClick = { viewModel.selectTeam(team) },
-                                label = { Text(team.name) },
-                                modifier = Modifier.weight(1f)
+                                label = {
+                                    Text(
+                                        team.name,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
                 uiState.selectedTeam?.let { team ->
-                    // Team Header Card
-                    Card(
+                    // Compact Team Header Card
+                    Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                        shape = MaterialTheme.shapes.small
                     ) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text(team.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                team.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Budget: ${team.remainingBudget} CR", style = MaterialTheme.typography.bodyLarge)
-                                Text("Players: ${team.players.size}", style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    "💰 ${team.remainingBudget} CR",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    "👥 ${team.players.size} Players",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                     }
