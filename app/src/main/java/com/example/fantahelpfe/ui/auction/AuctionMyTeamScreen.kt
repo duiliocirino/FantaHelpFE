@@ -19,6 +19,8 @@ import com.example.fantahelpfe.ui.components.LoadingState
 import com.example.fantahelpfe.data.mapper.toDomainPlayers
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.ui.text.style.TextOverflow
+import com.example.fantahelpfe.model.Player
+import com.example.fantahelpfe.utils.capitalizeFirstLetter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -7,10 +7,15 @@ import com.example.fantahelpfe.model.PlayerRole
 import kotlin.text.uppercase
 
 fun PlayerReadDto.toDomain(): Player {
+    val rawReg = this.regularity ?: this.regularness
+    val parsedRegularness = when {
+        rawReg > 0.0 && rawReg <= 1.0 -> (rawReg * 100).toInt()
+        else -> rawReg.toInt()
+    }
 
     return Player(
         id = this.id,
-        name = this.name, // Provide a default if name can be null from API
+        name = this.name,
         squad = this.squad,
         role = when (this.role.uppercase()) {
             "P" -> PlayerRole.P
@@ -21,7 +26,7 @@ fun PlayerReadDto.toDomain(): Player {
         },
         price = this.price,
         rating = this.rating,
-        regularness = this.regularness,
+        regularness = parsedRegularness,
         fvm = this.fvm,
         expectedPerformance = this.expectedPerformance,
         expectedStd = this.expectedStd,
