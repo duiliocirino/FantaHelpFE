@@ -195,31 +195,7 @@ fun AuctionBuyPlayersScreen(
         }
 
         uiState.selectedPlayer?.let { player ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            ) {
-                Column(Modifier.padding(12.dp)) {
-                    Text(
-                        player.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        "${player.squad} · ${player.role.name.capitalizeFirstLetter()}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Market: ${player.price} CR", style = MaterialTheme.typography.bodySmall)
-                        Text("Rating: ${String.format("%.1f", player.rating)}", style = MaterialTheme.typography.bodySmall)
-                        Text("Exp. Perf: ${String.format("%.1f", player.expectedPerformance)}", style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-            }
+            PlayerExecutiveScoutingCard(player = player)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -954,6 +930,157 @@ fun TacticalCalculationLoadingCard(
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
             ) {
                 Text("Cancel Analysis", style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlayerExecutiveScoutingCard(
+    player: com.example.fantahelpfe.model.Player
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            // Header Row: Role Badge, Name, Squad
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    SuggestionRoleBadge(roleName = player.role.name)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            player.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            player.squad,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+            Divider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Row 1: KPI Metrics Grid (3 Pill Badges)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // KPI 1: Exp. Performance
+                Column {
+                    Text(
+                        "⚡ Exp. Perf.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        String.format("%.1f pts", player.expectedPerformance),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    if (player.expectedStd > 0.0) {
+                        Text(
+                            String.format("±%.1f std", player.expectedStd),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // KPI 2: Titolarità / Regularness
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        "⏱️ Titolarità",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    val regColor = when {
+                        player.regularness >= 80 -> Color(0xFF388E3C)
+                        player.regularness >= 50 -> Color(0xFFF57F17)
+                        else -> Color(0xFFD32F2F)
+                    }
+                    Surface(
+                        color = regColor.copy(alpha = 0.15f),
+                        shape = MaterialTheme.shapes.extraSmall
+                    ) {
+                        Text(
+                            "${player.regularness}%",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = regColor,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+
+                // KPI 3: Media Voto / Rating
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        "⭐️ Rating",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        if (player.rating > 0.0) String.format("%.2f", player.rating) else "N/A",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Row 2: Financial Valuation Benchmarks Bar
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                shape = MaterialTheme.shapes.extraSmall,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // ML Expected Price
+                    val expPrice = if (player.expectedPrice > 0) player.expectedPrice else player.price
+                    Column {
+                        Text("🤖 Exp. Price", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("$expPrice CR", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    }
+
+                    // FVM Value
+                    if (player.fvm > 0) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("📊 FVM Value", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("${player.fvm} CR", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+
+                    // List Base Price
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("🏷️ List Base", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${player.price} CR", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
             }
         }
     }
