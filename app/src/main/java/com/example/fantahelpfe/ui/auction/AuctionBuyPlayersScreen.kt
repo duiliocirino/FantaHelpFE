@@ -996,10 +996,10 @@ private fun PlayerExecutiveScoutingCard(
                     )
                 }
 
-                // KPI 2: Titolarità / Regularness
+                // KPI 2: Starter Share / Regularity
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        "⏱️ Titolarità",
+                        "⏱️ Starter Share",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
