@@ -13,14 +13,22 @@ private fun parseRegularnessValue(vararg values: Any?): Int {
             is Number -> {
                 val d = raw.toDouble()
                 if (d > 0.0) {
-                    return if (d <= 1.0) (d * 100).toInt() else d.toInt()
+                    return when {
+                        d <= 1.0 -> (d * 100).toInt()
+                        d <= 5.0 -> (d * 20).toInt() // 1..5 scale (1=20%, 5=100%)
+                        else -> d.toInt() // 0..100 scale
+                    }
                 }
             }
             is String -> {
                 val cleaned = raw.replace("%", "").trim().replace(",", ".")
                 val d = cleaned.toDoubleOrNull()
                 if (d != null && d > 0.0) {
-                    return if (d <= 1.0) (d * 100).toInt() else d.toInt()
+                    return when {
+                        d <= 1.0 -> (d * 100).toInt()
+                        d <= 5.0 -> (d * 20).toInt()
+                        else -> d.toInt()
+                    }
                 }
             }
         }
