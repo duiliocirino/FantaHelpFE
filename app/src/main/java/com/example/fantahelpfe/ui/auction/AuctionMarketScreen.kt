@@ -55,14 +55,16 @@ fun AuctionMarketScreen(
                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
                 shape = MaterialTheme.shapes.small
             ) {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
                 ) {
-                    Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
                             "Market Pool 🔍",
                             style = MaterialTheme.typography.labelSmall,
@@ -75,11 +77,18 @@ fun AuctionMarketScreen(
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        RoleCountPill("GK", gkCount, Color(0xFFFFB74D))
-                        RoleCountPill("DEF", defCount, Color(0xFF64B5F6))
-                        RoleCountPill("MID", midCount, Color(0xFF81C784))
-                        RoleCountPill("ATT", attCount, Color(0xE5E57373))
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RoleCountPill("P", gkCount, Color(0xFFFFB74D), Modifier.weight(1f))
+                        RoleCountPill("D", defCount, Color(0xFF64B5F6), Modifier.weight(1f))
+                        RoleCountPill("C", midCount, Color(0xFF81C784), Modifier.weight(1f))
+                        RoleCountPill("A", attCount, Color(0xE5E57373), Modifier.weight(1f))
                     }
                 }
             }
@@ -235,17 +244,21 @@ fun AuctionMarketScreen(
 }
 
 @Composable
-private fun RoleCountPill(label: String, count: Int, color: Color) {
+private fun RoleCountPill(label: String, count: Int, color: Color, modifier: Modifier = Modifier) {
     Surface(
         color = color.copy(alpha = 0.2f),
-        shape = MaterialTheme.shapes.extraSmall
+        shape = MaterialTheme.shapes.extraSmall,
+        modifier = modifier
     ) {
         Text(
-            "$label $count",
+            "$label: $count",
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
             color = color,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+            maxLines = 1,
+            softWrap = false,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
         )
     }
 }
