@@ -483,37 +483,45 @@ fun HybridExecutiveDashboardCard(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Quick Roster & Financial Insights
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Starter vs Bench Badge
-                    Surface(
-                        color = if (uiState.isStarterInSuggested) Color(0xFFFFB74D) else MaterialTheme.colorScheme.surface,
-                        shape = MaterialTheme.shapes.extraSmall
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = if (uiState.isStarterInSuggested) "⭐️ Starter XI" else "🪑 Bench Depth",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            color = if (uiState.isStarterInSuggested) Color.Black else MaterialTheme.colorScheme.onSurface
-                        )
+                        // Starter vs Bench Badge
+                        Surface(
+                            color = if (uiState.isStarterInSuggested) Color(0xFFFFB74D) else MaterialTheme.colorScheme.surface,
+                            shape = MaterialTheme.shapes.extraSmall
+                        ) {
+                            Text(
+                                text = if (uiState.isStarterInSuggested) "⭐️ Starter XI" else "🪑 Bench Depth",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                color = if (uiState.isStarterInSuggested) Color.Black else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        // Remaining Budget After Bid (Main Card Section)
+                        uiState.selectedTeamForAssignment?.let { team ->
+                            val remainingAfter = team.remainingBudget - uiState.currentBidAmount
+                            val isDeficit = remainingAfter < 0
+                            Text(
+                                "Rem. Budget: $remainingAfter CR",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isDeficit) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                            )
+                        }
                     }
 
-                    // Displaced Player or ROI Ratio
                     if (uiState.displacedPlayerName != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            "Replaces: ${uiState.displacedPlayerName}",
+                            "Replaces in Starters: ${uiState.displacedPlayerName}",
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    } else if (uiState.creditsPerPointRatio != null) {
-                        Text(
-                            String.format("Efficiency: %.1f CR/pt", uiState.creditsPerPointRatio),
-                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -565,51 +573,32 @@ fun HybridExecutiveDashboardCard(
                             }
                         }
 
-                        // Roster Completion Cost Feasibility Bar
+                        // Roster Completion Cost Bar (Inside Tactical Breakdown)
                         uiState.totalExpectedPrice?.let { estCost ->
-                            val remainingBudget = (uiState.selectedTeamForAssignment?.remainingBudget ?: 0) - uiState.currentBidAmount
-                            val isSafe = remainingBudget >= estCost
-
                             Spacer(modifier = Modifier.height(10.dp))
                             Surface(
-                                color = if (isSafe) Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
+                                color = MaterialTheme.colorScheme.surface,
                                 shape = MaterialTheme.shapes.extraSmall,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(
-                                            "💰 Est. Cost to Complete Squad:",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        Text(
-                                            "$estCost CR",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(
-                                            "💳 Budget Left After Bid:",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        Text(
-                                            if (isSafe) "$remainingBudget CR  (Feasible ✅)" else "$remainingBudget CR  (Shortfall 🛑)",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (isSafe) Color(0xFF2E7D32) else Color(0xFFC62828)
-                                        )
-                                    }
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "💰 Est. Roster Completion Cost:",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        "$estCost CR",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
                                 }
                             }
                         }
