@@ -334,16 +334,10 @@ fun AuctionBuyPlayersScreen(
         if (uiState.selectedPlayer != null && uiState.currentBidAmount > 0 && uiState.selectedTeamForAssignment != null) {
             when {
                 uiState.isLoadingConvenienceScore -> {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                        Text(
-                            " Calculating score advantage...",
-                            modifier = Modifier.padding(start = 8.dp)
-                        )
-                        TextButton(onClick = { buyPlayersViewModel.cancelSuggestion() }) {
-                            Text("Cancel")
-                        }
-                    }
+                    TacticalCalculationLoadingCard(
+                        playerName = uiState.selectedPlayer?.name ?: "Player",
+                        onCancel = buyPlayersViewModel::cancelSuggestion
+                    )
                 }
                 uiState.convenienceScoreError != null -> {
                     Text(
@@ -793,3 +787,53 @@ private fun roleOrder(role: String): Int = when {
 }
 
 private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+
+@Composable
+fun TacticalCalculationLoadingCard(
+    playerName: String,
+    onCancel: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.5.dp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    "🤖 AI Tactical Engine Analyzing...",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                "Evaluating line-up combinations and score impact for $playerName...",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = onCancel,
+                modifier = Modifier.height(32.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+            ) {
+                Text("Cancel Analysis", style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+}

@@ -227,13 +227,26 @@ class AuctionBuyPlayersViewModel @Inject constructor(
     }
 
     fun onPlayerSelectedFromSearch(player: Player) {
-        // Here, player is the full domain model from search
+        val initialBid = if (player.price > 0) player.price else 1
         _uiState.update {
             it.copy(
                 selectedPlayer = player,
                 searchResults = emptyList(), // Clear search results
                 searchQuery = player.name, // Update search box with full name
-                isSearchingPlayers = false
+                isSearchingPlayers = false,
+                currentBidAmount = initialBid,
+                bidAmountInput = initialBid.toString(),
+                baseOptimalScore = null,
+                potentialOptimalScore = null,
+                convenienceScoreDelta = null,
+                baseScoreDetail = null,
+                potentialScoreDetail = null,
+                isStarterInSuggested = false,
+                displacedPlayerName = null,
+                creditsPerPointRatio = null,
+                potentialSuggestedPlayers = emptyList(),
+                totalExpectedPrice = null,
+                convenienceScoreError = null
             )
         }
         // Convenience score will be triggered by the observer
