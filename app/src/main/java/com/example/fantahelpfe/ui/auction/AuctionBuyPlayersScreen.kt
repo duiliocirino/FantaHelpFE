@@ -25,6 +25,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.fantahelpfe.data.remote.dto.Score
+import com.example.fantahelpfe.data.remote.dto.read.PlayerReadDto
 import com.example.fantahelpfe.utils.capitalizeFirstLetter
 import kotlinx.coroutines.delay
 
