@@ -11,6 +11,7 @@ import com.example.fantahelpfe.data.remote.dto.LineUp // Assuming you have this 
 import com.example.fantahelpfe.data.remote.dto.SuggestionRequest
 import com.example.fantahelpfe.data.DataRepository
 import com.example.fantahelpfe.data.remote.dto.AuctionedPlayerInfo
+import com.example.fantahelpfe.data.remote.dto.Score
 import com.example.fantahelpfe.model.League // For league context if needed for LineUp
 import com.example.fantahelpfe.model.Player
 import com.example.fantahelpfe.model.Team
