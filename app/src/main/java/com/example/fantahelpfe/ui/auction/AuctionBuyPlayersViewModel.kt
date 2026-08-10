@@ -61,14 +61,17 @@ data class AuctionBuyPlayersUiState(
 
     val baseOptimalScore: Double? = null,
     val potentialOptimalScore: Double? = null,
+    val withoutPlayerOptimalScore: Double? = null,
     val convenienceScoreDelta: Double? = null,
     val baseScoreDetail: Score? = null,
     val potentialScoreDetail: Score? = null,
+    val withoutPlayerScoreDetail: Score? = null,
     val isStarterInSuggested: Boolean = false,
     val displacedPlayerName: String? = null,
     val creditsPerPointRatio: Double? = null,
     val baseSuggestedPlayers: List<PlayerReadDto> = emptyList(),
     val potentialSuggestedPlayers: List<PlayerReadDto> = emptyList(),
+    val withoutPlayerSuggestedPlayers: List<PlayerReadDto> = emptyList(),
     val hasDistinctPlanB: Boolean = false,
     val selectedRosterTab: RosterBreakdownTab = RosterBreakdownTab.Potential,
     val totalExpectedPrice: Int? = null,
@@ -336,6 +339,7 @@ class AuctionBuyPlayersViewModel @Inject constructor(
 
                 val baseScore = firstResult?.score?.totalScore
                 val potentialScore = firstResult?.potentialScore?.score?.totalScore
+                val withoutScore = firstResult?.withoutPlayerScore?.score?.totalScore
                 val isBudgetExceeded = firstResult != null && firstResult.potentialScore == null
 
                 val delta = if (baseScore != null && potentialScore != null) potentialScore - baseScore else null
@@ -343,6 +347,8 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                 val basePlayers = firstResult?.suggestedPlayers ?: emptyList()
                 val rawPotentialPlayers = firstResult?.potentialScore?.suggestedPlayers
                 val potentialPlayers = if (!rawPotentialPlayers.isNullOrEmpty()) rawPotentialPlayers else basePlayers
+                val rawWithoutPlayers = firstResult?.withoutPlayerScore?.suggestedPlayers
+                val withoutPlayers = if (!rawWithoutPlayers.isNullOrEmpty()) rawWithoutPlayers else basePlayers
 
                 val isStarter = potentialPlayers.any { it.id == playerToConsider.id }
                 val displaced = basePlayers.firstOrNull { baseP ->
@@ -354,20 +360,24 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                 val totalExpCost = firstResult?.potentialScore?.totalExpectedPrice ?: firstResult?.totalExpectedPrice
 
                 val isInBaseOptimal = basePlayers.any { it.id == playerToConsider.id }
+                val hasDistinctPlanB = isInBaseOptimal || (withoutScore != null && baseScore != null && withoutScore != baseScore)
 
                 _uiState.update {
                     it.copy(
                         baseOptimalScore = baseScore,
                         potentialOptimalScore = potentialScore,
+                        withoutPlayerOptimalScore = withoutScore,
                         convenienceScoreDelta = delta,
                         baseScoreDetail = firstResult?.score,
                         potentialScoreDetail = firstResult?.potentialScore?.score ?: firstResult?.score,
+                        withoutPlayerScoreDetail = firstResult?.withoutPlayerScore?.score,
                         isStarterInSuggested = isStarter,
                         displacedPlayerName = displaced?.name,
                         creditsPerPointRatio = roi,
                         baseSuggestedPlayers = basePlayers,
                         potentialSuggestedPlayers = potentialPlayers,
-                        hasDistinctPlanB = isInBaseOptimal,
+                        withoutPlayerSuggestedPlayers = withoutPlayers,
+                        hasDistinctPlanB = hasDistinctPlanB,
                         selectedRosterTab = RosterBreakdownTab.Potential,
                         totalExpectedPrice = totalExpCost,
                         isLoadingConvenienceScore = false,

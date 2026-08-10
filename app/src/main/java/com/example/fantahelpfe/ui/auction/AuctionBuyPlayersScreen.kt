@@ -613,10 +613,18 @@ fun HybridExecutiveDashboardCard(
                                 Text("Penalty Score", style = MaterialTheme.typography.bodySmall)
                             }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Current", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("Default", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(String.format("%.1f", uiState.baseScoreDetail?.starterScore ?: 0.0), style = MaterialTheme.typography.bodySmall)
                                 Text(String.format("%.1f", uiState.baseScoreDetail?.benchScore ?: 0.0), style = MaterialTheme.typography.bodySmall)
                                 Text(String.format("%.1f", uiState.baseScoreDetail?.penaltyScore ?: 0.0), style = MaterialTheme.typography.bodySmall)
+                            }
+                            if (uiState.hasDistinctPlanB && uiState.withoutPlayerScoreDetail != null) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Plan B", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(String.format("%.1f", uiState.withoutPlayerScoreDetail?.starterScore ?: 0.0), style = MaterialTheme.typography.bodySmall)
+                                    Text(String.format("%.1f", uiState.withoutPlayerScoreDetail?.benchScore ?: 0.0), style = MaterialTheme.typography.bodySmall)
+                                    Text(String.format("%.1f", uiState.withoutPlayerScoreDetail?.penaltyScore ?: 0.0), style = MaterialTheme.typography.bodySmall)
+                                }
                             }
                             Column(horizontalAlignment = Alignment.End) {
                                 Text("With $playerName", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
@@ -696,7 +704,8 @@ fun HybridExecutiveDashboardCard(
                         // Roster Player Lineup Display for Selected Tab
                         val activePlayerList = when (uiState.selectedRosterTab) {
                             RosterBreakdownTab.Potential -> uiState.potentialSuggestedPlayers
-                            RosterBreakdownTab.DefaultBase, RosterBreakdownTab.PlanBWithout -> uiState.baseSuggestedPlayers
+                            RosterBreakdownTab.DefaultBase -> uiState.baseSuggestedPlayers
+                            RosterBreakdownTab.PlanBWithout -> uiState.withoutPlayerSuggestedPlayers
                         }
 
                         if (activePlayerList.isNotEmpty()) {
