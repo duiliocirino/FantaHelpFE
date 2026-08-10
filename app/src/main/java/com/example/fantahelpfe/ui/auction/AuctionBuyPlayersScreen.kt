@@ -577,19 +577,21 @@ fun HybridExecutiveDashboardCard(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 10.dp, vertical = 6.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        "💰 Est. Roster Completion Cost:",
-                                        style = MaterialTheme.typography.labelSmall,
+                                        "💰 Est. Roster Cost",
+                                        style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = if (isSafe) Color(0xFF2E7D32) else Color(0xFFC62828)
                                     )
                                     Text(
-                                        "$estCost CR (Rem. Budget: $remainingBudget CR)",
-                                        style = MaterialTheme.typography.labelSmall,
+                                        "$estCost CR / $remainingBudget CR Rem.",
+                                        style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = if (isSafe) Color(0xFF2E7D32) else Color(0xFFC62828)
                                     )
