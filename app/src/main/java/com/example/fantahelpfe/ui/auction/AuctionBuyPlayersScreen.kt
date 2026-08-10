@@ -565,7 +565,7 @@ fun HybridExecutiveDashboardCard(
                             Text("Projected Lineup Players:", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(4.dp))
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                uiState.potentialSuggestedPlayers.take(6).forEach { playerDto ->
+                                uiState.potentialSuggestedPlayers.take(6).forEach { playerDto: PlayerReadDto ->
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween,
