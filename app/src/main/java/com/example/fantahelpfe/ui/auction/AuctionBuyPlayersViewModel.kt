@@ -125,40 +125,29 @@ class AuctionBuyPlayersViewModel @Inject constructor(
             }
         }
 
-        // Observe shared settings and UI state to trigger convenience score calculation
-        viewModelScope.launch {
-            combine(
-                _uiState,
-                auctionSessionManager.settings
-            ) { state, settings ->
-                ScoreCalculationKey(
-                    playerId = state.selectedPlayer?.id,
-                    teamId = state.selectedTeamForAssignment?.id,
-                    bid = state.currentBidAmount,
-                    settings = settings
-                )
-            }
-            .distinctUntilChanged()
-            .debounce(300)
-            .collect { key ->
-                val state = _uiState.value
-                val player = state.selectedPlayer
-                val team = state.selectedTeamForAssignment
+        // Pure manual calculation mode — triggered on demand by user
+    }
 
-                if (player != null && player.id == key.playerId && team != null && team.id == key.teamId && key.bid > 0) {
-                    calculateConvenienceScore(
-                        playerToConsider = player,
-                        bidForPlayer = key.bid,
-                        teamForContext = team,
-                        lineUp = key.settings.lineUp,
-                        globalFavoritePlayerIds = key.settings.globalFavoritePlayerIds,
-                        creditsDistributionMultiplier = key.settings.creditsDistributionMultiplier
-                    )
-                } else if (player == null || team == null || key.bid <= 0) {
-                    clearConvenienceScores()
-                }
-            }
+    fun calculateOptimalSuggestion() {
+        val state = _uiState.value
+        val player = state.selectedPlayer
+        val team = state.selectedTeamForAssignment
+        val bid = state.currentBidAmount
+        val settings = auctionSessionManager.settings.value
+
+        if (player == null || team == null || bid <= 0) {
+            clearConvenienceScores()
+            return
         }
+
+        calculateConvenienceScore(
+            playerToConsider = player,
+            bidForPlayer = bid,
+            teamForContext = team,
+            lineUp = settings.lineUp,
+            globalFavoritePlayerIds = settings.globalFavoritePlayerIds,
+            creditsDistributionMultiplier = settings.creditsDistributionMultiplier
+        )
     }
 
     fun refreshAll() {
@@ -259,8 +248,15 @@ class AuctionBuyPlayersViewModel @Inject constructor(
 
     fun onBidAmountChanged(newAmountText: String) {
         val amountInt = newAmountText.toIntOrNull() ?: _uiState.value.currentBidAmount // Keep old if invalid
-        _uiState.update { it.copy(bidAmountInput = newAmountText, currentBidAmount = amountInt.coerceAtLeast(0)) }
-        // Convenience score will be triggered by the observer if player is selected
+        _uiState.update { 
+            it.copy(
+                bidAmountInput = newAmountText, 
+                currentBidAmount = amountInt.coerceAtLeast(0),
+                baseOptimalScore = null,
+                potentialOptimalScore = null,
+                convenienceScoreDelta = null
+            ) 
+        }
     }
 
     fun adjustBid(delta: Int) {

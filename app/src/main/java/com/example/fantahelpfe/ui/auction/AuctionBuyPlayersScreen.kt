@@ -222,22 +222,59 @@ fun AuctionBuyPlayersScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // --- Bid Amount ---
-        if (uiState.selectedPlayer != null) {
-            // Budget display
-            uiState.selectedTeamForAssignment?.let { team ->
-                val budgetColor = if (team.remainingBudget < uiState.currentBidAmount)
-                    MaterialTheme.colorScheme.error
-                else
-                    MaterialTheme.colorScheme.tertiary
-                Text(
-                    "Remaining budget: ${team.remainingBudget} CR",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = budgetColor,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
+        // --- Immediate Financial Context Badge (Option 2) ---
+        if (uiState.selectedPlayer != null && uiState.selectedTeamForAssignment != null) {
+            val team = uiState.selectedTeamForAssignment!!
+            val remainingAfter = team.remainingBudget - uiState.currentBidAmount
+            val isDeficit = remainingAfter < 0
+
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            "💳 ${team.name} Budget",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "${team.remainingBudget} CR",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            "After Bid",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "$remainingAfter CR",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isDeficit) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        // --- Bid Amount Controls ---
+        if (uiState.selectedPlayer != null) {
             Text("Bid Amount:", style = MaterialTheme.typography.titleSmall)
+            Spacer(modifier = Modifier.height(4.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
@@ -276,7 +313,7 @@ fun AuctionBuyPlayersScreen(
                     modifier = Modifier.weight(1f)
                 ) { Text("+5") }
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
 
         // --- Team Assignment Dropdown ---
@@ -327,11 +364,32 @@ fun AuctionBuyPlayersScreen(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
 
-        // --- Convenience Score Display ---
+        // --- Manual Calculate Score Advantage Button ---
         if (uiState.selectedPlayer != null && uiState.currentBidAmount > 0 && uiState.selectedTeamForAssignment != null) {
+            Button(
+                onClick = buyPlayersViewModel::calculateOptimalSuggestion,
+                enabled = !uiState.isLoadingConvenienceScore,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = "Calculate", modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    if (uiState.baseOptimalScore != null)
+                        "⚡ Re-Calculate Advantage (${uiState.currentBidAmount} CR)"
+                    else
+                        "⚡ Analyze Score Advantage (${uiState.currentBidAmount} CR)",
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // --- Convenience Score Display ---
             when {
                 uiState.isLoadingConvenienceScore -> {
                     TacticalCalculationLoadingCard(
