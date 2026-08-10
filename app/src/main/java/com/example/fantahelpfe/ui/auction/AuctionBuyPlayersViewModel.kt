@@ -75,6 +75,7 @@ data class AuctionBuyPlayersUiState(
     val hasDistinctPlanB: Boolean = false,
     val selectedRosterTab: RosterBreakdownTab = RosterBreakdownTab.Potential,
     val totalExpectedPrice: Int? = null,
+    val targetLineUp: LineUp? = null,
     val isLoadingConvenienceScore: Boolean = false,
     val convenienceScoreError: String? = null,
 
@@ -134,6 +135,13 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                 if (player != null) {
                     onPlayerSelectedFromSearch(player)
                 }
+            }
+        }
+
+        // Observe settings for lineUp configuration
+        viewModelScope.launch {
+            auctionSessionManager.settings.collect { settings ->
+                _uiState.update { it.copy(targetLineUp = settings.lineUp) }
             }
         }
 

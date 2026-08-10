@@ -713,8 +713,8 @@ fun HybridExecutiveDashboardCard(
                         }
 
                         if (activePlayerList.isNotEmpty()) {
-                            val (startersList, benchList) = remember(activePlayerList) {
-                                partitionStartersAndBench(activePlayerList)
+                            val (startersList, benchList) = remember(activePlayerList, uiState.targetLineUp) {
+                                partitionStartersAndBench(activePlayerList, uiState.targetLineUp)
                             }
 
                             if (startersList.isNotEmpty()) {
@@ -863,9 +863,15 @@ private fun PlayerLineupRow(
 }
 
 private fun partitionStartersAndBench(
-    players: List<PlayerReadDto>
+    players: List<PlayerReadDto>,
+    lineUp: LineUp? = null
 ): Pair<List<PlayerReadDto>, List<PlayerReadDto>> {
     if (players.isEmpty()) return Pair(emptyList(), emptyList())
+
+    val nGk = lineUp?.keepers ?: 1
+    val nDef = lineUp?.defenders ?: 4
+    val nMid = lineUp?.midfielders ?: 3
+    val nAtt = lineUp?.attackers ?: 3
 
     val goalkeepers = players.filter { it.role.equals("P", ignoreCase = true) || it.role.startsWith("Port", ignoreCase = true) }
         .sortedByDescending { it.expectedPerformance }
@@ -876,10 +882,10 @@ private fun partitionStartersAndBench(
     val attackers = players.filter { it.role.equals("A", ignoreCase = true) || it.role.startsWith("Att", ignoreCase = true) }
         .sortedByDescending { it.expectedPerformance }
 
-    val starterGk = goalkeepers.take(1)
-    val starterDef = defenders.take(4)
-    val starterMid = midfielders.take(4)
-    val starterAtt = attackers.take(2)
+    val starterGk = goalkeepers.take(nGk)
+    val starterDef = defenders.take(nDef)
+    val starterMid = midfielders.take(nMid)
+    val starterAtt = attackers.take(nAtt)
 
     val starters = (starterGk + starterDef + starterMid + starterAtt)
         .sortedBy { roleOrder(it.role) }
