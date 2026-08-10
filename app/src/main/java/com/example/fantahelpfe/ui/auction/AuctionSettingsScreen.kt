@@ -24,6 +24,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.fantahelpfe.data.remote.dto.LineUp
 import com.example.fantahelpfe.model.Player
 import com.example.fantahelpfe.utils.capitalizeFirstLetter
 
@@ -224,7 +226,9 @@ fun AuctionSettingsScreen(
 
                 val formationPresets = remember {
                     listOf(
-                        LineUpPreset("4-3-3", LineUp(keepers = 1, defenders = 4, midfielders = 3, attackers = 3)),
+                        LineUpPreset("4-3-3",
+                            LineUp(keepers = 1, defenders = 4, midfielders = 3, attackers = 3)
+                        ),
                         LineUpPreset("3-4-3", LineUp(keepers = 1, defenders = 3, midfielders = 4, attackers = 3)),
                         LineUpPreset("4-4-2", LineUp(keepers = 1, defenders = 4, midfielders = 4, attackers = 2)),
                         LineUpPreset("3-5-2", LineUp(keepers = 1, defenders = 3, midfielders = 5, attackers = 2)),
