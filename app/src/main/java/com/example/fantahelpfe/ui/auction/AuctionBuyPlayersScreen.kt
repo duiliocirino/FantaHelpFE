@@ -994,13 +994,6 @@ private fun PlayerExecutiveScoutingCard(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    if (player.expectedStd > 0.0) {
-                        Text(
-                            String.format("±%.1f std", player.expectedStd),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
                 }
 
                 // KPI 2: Titolarità / Regularness
@@ -1047,38 +1040,72 @@ private fun PlayerExecutiveScoutingCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Row 2: Financial Valuation Benchmarks Bar
+            // Row 2: Financial Valuation & Auctionable Range Benchmarks Bar
             Surface(
                 color = MaterialTheme.colorScheme.surface,
                 shape = MaterialTheme.shapes.extraSmall,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // ML Expected Price
-                    val expPrice = if (player.expectedPrice > 0) player.expectedPrice else player.price
-                    Column {
-                        Text("🤖 Exp. Price", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("$expPrice CR", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    }
+                Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // ML Expected Price + Price Volatility Std
+                        val expPrice = if (player.expectedPrice > 0) player.expectedPrice else player.price
+                        val stdVal = player.expectedStd
+                        Column {
+                            Text("🤖 Exp. Price Range", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("$expPrice CR", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                if (stdVal > 0.0) {
+                                    Text(
+                                        String.format(" (±%.0f)", stdVal),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
 
-                    // FVM Value
-                    if (player.fvm > 0) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("📊 FVM Value", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("${player.fvm} CR", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                        // FVM Value
+                        if (player.fvm > 0) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("📊 FVM Value", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("${player.fvm} CR", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+
+                        // List Base Price
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("🏷️ List Base", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("${player.price} CR", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
 
-                    // List Base Price
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text("🏷️ List Base", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("${player.price} CR", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    // Auctionable Price Window Pill
+                    val expPrice = if (player.expectedPrice > 0) player.expectedPrice else player.price
+                    val stdInt = player.expectedStd.toInt()
+                    if (stdInt > 0) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        val minRange = (expPrice - stdInt).coerceAtLeast(1)
+                        val maxRange = expPrice + stdInt
+                        Surface(
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                            shape = MaterialTheme.shapes.extraSmall,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                "🎯 Fair Auctionable Window: $minRange – $maxRange CR (Max Cap: $maxRange CR)",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }
