@@ -62,6 +62,7 @@ fun PlayerReadDto.toDomain(): Player {
         expectedPerformance = this.expectedPerformance,
         expectedStd = this.expectedStd,
         expectedPrice = this.expectedPrice,
+        age = this.age
     )
 }
 

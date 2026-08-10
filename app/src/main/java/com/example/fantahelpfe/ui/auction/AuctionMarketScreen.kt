@@ -295,8 +295,9 @@ fun MarketPlayerItem(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
+                        val ageText = player.age?.let { " · $it yrs" } ?: ""
                         Text(
-                            player.squad,
+                            "${player.squad}$ageText",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
