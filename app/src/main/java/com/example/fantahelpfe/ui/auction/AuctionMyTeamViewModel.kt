@@ -26,6 +26,7 @@ import javax.inject.Inject
 data class AuctionMyTeamUiState(
     val teams: List<Team> = emptyList(),
     val selectedTeam: Team? = null,
+    val allPlayersMap: Map<Int, Player> = emptyMap(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val suggestionResults: List<SuggestionResult>? = null,
@@ -65,8 +66,13 @@ class AuctionMyTeamViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 val teams = repository.getTeamsFromLeague(leagueId)
-                Log.d("AuctionMyTeamVM", "getTeamsFromLeague returned ${teams.size} teams: ${teams.map { "${it.name}(id=${it.id})" }}")
-                _uiState.update { it.copy(teams = teams, isLoading = false) }
+                val allPlayers = try {
+                    repository.getAllPlayers().associateBy { it.id }
+                } catch (e: Exception) {
+                    emptyMap()
+                }
+                Log.d("AuctionMyTeamVM", "getTeamsFromLeague returned ${teams.size} teams, loaded ${allPlayers.size} allPlayers")
+                _uiState.update { it.copy(teams = teams, allPlayersMap = allPlayers, isLoading = false) }
 
                 val targetTeamId = _uiState.value.selectedTeam?.id ?: teams.firstOrNull()?.id
                 Log.d("AuctionMyTeamVM", "Target team ID to select: $targetTeamId")
@@ -106,13 +112,18 @@ class AuctionMyTeamViewModel @Inject constructor(
             try {
                 repository.clearCache()
                 val teams = repository.getTeamsFromLeague(currentLeagueId)
+                val allPlayers = if (_uiState.value.allPlayersMap.isEmpty()) {
+                    try { repository.getAllPlayers().associateBy { it.id } } catch (e: Exception) { emptyMap() }
+                } else {
+                    _uiState.value.allPlayersMap
+                }
                 val currentSelectedId = _uiState.value.selectedTeam?.id
                 val targetTeamId = currentSelectedId ?: teams.firstOrNull()?.id
                 Log.d("AuctionMyTeamVM", "refreshTeam targetTeamId=$targetTeamId (currentSelectedId=$currentSelectedId)")
                 if (targetTeamId != null) {
                     val updatedTeam = repository.getTeamById(targetTeamId)
                     Log.d("AuctionMyTeamVM", "refreshTeam updated detailed team: ${updatedTeam.name} (players=${updatedTeam.players.size})")
-                    _uiState.update { it.copy(teams = teams, selectedTeam = updatedTeam) }
+                    _uiState.update { it.copy(teams = teams, allPlayersMap = allPlayers, selectedTeam = updatedTeam) }
                 }
             } catch (e: Exception) {
                 Log.e("AuctionMyTeamVM", "Error refreshing team: ${e.message}", e)
