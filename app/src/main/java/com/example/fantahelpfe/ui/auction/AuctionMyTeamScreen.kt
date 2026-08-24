@@ -77,12 +77,18 @@ fun AuctionMyTeamScreen(
 
     // Executive Player Inspector Dialog
     inspectedPlayer?.let { (teamPlayer, fullPlayer) ->
+        val isAcquired = uiState.selectedTeam?.players?.any { it.playerId == teamPlayer.playerId } == true
         PlayerInspectorDialog(
             teamPlayer = teamPlayer,
             player = fullPlayer,
+            isAcquired = isAcquired,
             onDismiss = { inspectedPlayer = null },
             onRemove = {
                 removeConfirmationPlayer = teamPlayer
+            },
+            onAuctionClick = {
+                fullPlayer?.let { sharedViewModel.selectPlayerForBuy(it) }
+                inspectedPlayer = null
             }
         )
     }
@@ -384,8 +390,22 @@ fun AuctionMyTeamScreen(
                                         verticalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
                                         items(domainSuggestedPlayers, key = { it.id }) { player ->
-                                            val isAcquired = currentRosterPlayerIds.contains(player.id)
-                                            SuggestedPlayerItem(player = player, isAcquired = isAcquired)
+                                            val matchingTeamPlayer = team.players.find { it.playerId == player.id }
+                                            val isAcquired = matchingTeamPlayer != null
+                                            SuggestedPlayerItem(
+                                                player = player,
+                                                isAcquired = isAcquired,
+                                                onClick = {
+                                                    val tp = matchingTeamPlayer ?: TeamPlayer(
+                                                        playerId = player.id,
+                                                        teamId = team.id,
+                                                        playerName = player.name,
+                                                        auctionPrice = player.expectedPrice,
+                                                        playerRole = player.role
+                                                    )
+                                                    inspectedPlayer = tp to player
+                                                }
+                                            )
                                         }
                                     }
                                 } ?: run {
@@ -516,8 +536,10 @@ fun TeamPlayerItem(
 fun PlayerInspectorDialog(
     teamPlayer: TeamPlayer,
     player: Player?,
+    isAcquired: Boolean,
     onDismiss: () -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    onAuctionClick: (() -> Unit)? = null
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -571,20 +593,30 @@ fun PlayerInspectorDialog(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column {
-                                Text("Paid in Auction", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("${teamPlayer.auctionPrice} CR", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            if (isAcquired) {
+                                Column {
+                                    Text("Paid in Auction", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("${teamPlayer.auctionPrice} CR", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                }
                             }
 
                             val expPrice = player?.expectedPrice ?: 0
                             val stdVal = player?.expectedStd ?: 0.0
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Column(horizontalAlignment = if (isAcquired) Alignment.CenterHorizontally else Alignment.Start) {
                                 Text("🤖 ML Fair Value", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(
                                     if (expPrice > 0) "$expPrice CR${if (stdVal > 0) " (±${stdVal.toInt()})" else ""}" else "N/A",
                                     style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (!isAcquired) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                 )
+                            }
+
+                            if (player != null && player.fvm > 0) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("📊 FVM Value", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("${player.fvm} CR", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                                }
                             }
 
                             Column(horizontalAlignment = Alignment.End) {
@@ -593,8 +625,8 @@ fun PlayerInspectorDialog(
                             }
                         }
 
-                        // Deal Outcome Evaluation Banner
-                        if (player != null && player.expectedPrice > 0) {
+                        // Deal Outcome Evaluation Banner (Acquired) or Target Banner (Target)
+                        if (isAcquired && player != null && player.expectedPrice > 0) {
                             Spacer(modifier = Modifier.height(8.dp))
                             val diff = player.expectedPrice - teamPlayer.auctionPrice
                             val (dealText, dealColor) = when {
@@ -612,6 +644,22 @@ fun PlayerInspectorDialog(
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.SemiBold,
                                     color = dealColor,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        } else if (!isAcquired) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Surface(
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                                shape = MaterialTheme.shapes.extraSmall,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    "🎯 Optimal Suggestion Target — Recommended for this Roster",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary,
                                     textAlign = TextAlign.Center,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                 )
@@ -693,15 +741,26 @@ fun PlayerInspectorDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedButton(
-                        onClick = {
-                            onRemove()
-                        },
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Icon(Icons.Default.Delete, contentDescription = "Remove", modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Remove")
+                    if (isAcquired) {
+                        OutlinedButton(
+                            onClick = {
+                                onRemove()
+                            },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = "Remove", modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Remove")
+                        }
+                    } else if (onAuctionClick != null) {
+                        Button(
+                            onClick = onAuctionClick,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Text("⚽ Auction Player")
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.width(1.dp))
                     }
 
                     Button(onClick = onDismiss) {
@@ -714,9 +773,15 @@ fun PlayerInspectorDialog(
 }
 
 @Composable
-fun SuggestedPlayerItem(player: Player, isAcquired: Boolean) {
+fun SuggestedPlayerItem(
+    player: Player,
+    isAcquired: Boolean,
+    onClick: () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         colors = if (isAcquired) {
             CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
         } else {
@@ -740,8 +805,9 @@ fun SuggestedPlayerItem(player: Player, isAcquired: Boolean) {
                     Spacer(modifier = Modifier.width(8.dp))
                     SuggestionRoleBadge(roleName = player.role.name)
                 }
+                val age = player.age?.takeIf { it > 0 }?.let { " · $it yrs" } ?: ""
                 Text(
-                    "${player.squad} · Exp. Perf: ${String.format("%.1f", player.expectedPerformance)}",
+                    "${player.squad}$age · Exp. Perf: ${String.format("%.1f", player.expectedPerformance)}",
                     style = MaterialTheme.typography.bodySmall
                 )
             }
