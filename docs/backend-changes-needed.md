@@ -13,6 +13,8 @@ The frontend audit found 3 missing fields in Read DTOs that cause Moshi deserial
 | 3 | `LeagueReadDto` missing `GoalBonusPerRole` | ✅ RESOLVED | BE added `GoalBonusPerRole` property, mapped from `League.GoalBonusPerRole` |
 | 4 & 5 | `SuggestionRequest.AuctionedPlayer` & Single-Call Contract | ✅ RESOLVED | BE merged single-call contract: `SuggestionResult` contains `score` (base optimal) and `potentialScore` (`SuggestionResult?`, potential optimal). Shared per-role DP tables. Returns `potentialScore = null` if budget is exceeded or `auctionedPlayer` is null. Integrated on FE. |
 | 6 | `GET /api/teams/{id}` Roster Inclusion | ✅ RESOLVED | BE added `.Include(t => t.TeamPlayers)` to `GET /api/teams/{id}` endpoint. Roster items map properly to `TeamReadDto.Players`. Integrated on FE. |
+| 9 | Per-format expected prices on player read endpoints | 📋 BACKLOG | 26-27+ contract: `expectedPrice`/`expectedStd` on `GET /api/players` & `GET /api/leagues/{id}/players` are reference-format (800_8) values. BE will add an optional format query param; FE to request its league's format. No FE action until implemented. |
+| 10 | `PlayerReadDto.integrity` new nullable field | ℹ️ INFO | Additive field (1–5, higher = more robust, null = unknown). Moshi-safe; FE may display it, no action required. |
 
 ---
 
@@ -132,5 +134,31 @@ Return the break-even maximum bid price alongside `PotentialScore`. The FE will 
 **Concept**: When `auctionedPlayer` (`playerId`, `acquisitionPrice`) is specified in `SuggestionRequest`, the solver evaluates `potentialScore` WITH `auctionedPlayer` at `acquisitionPrice`. For the base `score` calculation, filter out `auctionedPlayer.playerId` from the available market candidate pool.
 
 **Benefit**: This ensures `score` represents the true Plan B benchmark optimal team **without the auctioned player**, making $\Delta = \text{PotentialScore} - \text{BaseScore}$ the exact net advantage of winning the auctioned player vs letting them go to a rival manager.
+
+---
+
+### 9. `PlayerReadDto` — Per-Format Expected Prices (26-27+ contract)
+
+**Files**: `Fantahelp.API/Controllers/PlayersController.cs`, `Fantahelp.API/Services/PlayerService.cs`
+
+**Context**: From the 26-27 season, ML produces **per-format** expected prices — the BE stores them in a `PlayerPrice` table (one row per player × league format: credits + starters). The suggestion engine (`POST /api/teams/getOptimal`) already resolves the league's format internally from `(League.InitialBudget, lineup total starters)` (exact match, else closest), and `SuggestionResult.SuggestedPlayers` prices are format-correct.
+
+**Current behavior**: the player read endpoints (`GET /api/players`, `GET /api/players/{id}`, `GET /api/leagues/{id}/players`) return a single **reference-format (800_8)** value in `expectedPrice`/`expectedStd` for every player, regardless of the consuming league's format.
+
+**Requested change**: add an optional format query parameter (e.g. `?credits=1000&starters=10`) to the player read endpoints; when present, return that format's `expectedPrice`/`expectedStd` (closest available format when no exact match). When absent, keep today's reference-format behavior for backward compatibility.
+
+**FE side**: the FE knows each league's format (budget + lineup), so it can pass it once the param lands. Until then, displayed expected prices are 800_8 values — fine for 800-credit leagues, approximate for others.
+
+**Status**: BE backlog (tracked in `FantaHelpBE/docs/FUTURE_STEPS.md`).
+
+---
+
+### 10. `PlayerReadDto.integrity` — New Nullable Field (26-27+)
+
+**Context**: `integrity` is ML's injury-proneness consensus: 1–5, higher = more robust (5 = iron man). Null when no consensus exists — it is intentionally never defaulted.
+
+**Impact on FE**: purely additive on `PlayerReadDto` (and the league players endpoint). Moshi ignores unknown fields, so nothing breaks. If the FE wants to surface robustness on scouting cards, model it as `Integrity: Int?`.
+
+**Status**: informational — no BE/FE action required.
 
 
