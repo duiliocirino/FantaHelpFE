@@ -15,6 +15,7 @@ The frontend audit found 3 missing fields in Read DTOs that cause Moshi deserial
 | 6 | `GET /api/teams/{id}` Roster Inclusion | ✅ RESOLVED | BE added `.Include(t => t.TeamPlayers)` to `GET /api/teams/{id}` endpoint. Roster items map properly to `TeamReadDto.Players`. Integrated on FE. |
 | 9 | Per-format expected prices on player read endpoints | 📋 BACKLOG | 26-27+ contract: `expectedPrice`/`expectedStd` on `GET /api/players` & `GET /api/leagues/{id}/players` are reference-format (800_8) values. BE will add an optional format query param; FE to request its league's format. No FE action until implemented. |
 | 10 | `PlayerReadDto.integrity` new nullable field | ℹ️ INFO | Additive field (1–5, higher = more robust, null = unknown). Moshi-safe; FE may display it, no action required. |
+| 11 | `regularness` moves to 0–100 expected-starting-% | ℹ️ INFO | 26-27+: `regularness` is now 0–100 (multiples of 5), was int 1–5. FE's `parseRegularnessValue` (PlayerMapper.kt) already handles the 0–100 scale -- **no FE action needed**. Values like 0 (bench) and 65/90 (real spread) will appear. |
 
 ---
 
@@ -160,5 +161,17 @@ Return the break-even maximum bid price alongside `PotentialScore`. The FE will 
 **Impact on FE**: purely additive on `PlayerReadDto` (and the league players endpoint). Moshi ignores unknown fields, so nothing breaks. If the FE wants to surface robustness on scouting cards, model it as `Integrity: Int?`.
 
 **Status**: informational — no BE/FE action required.
+
+---
+
+### 11. `regularness` — 0–100 Expected-Starting-% Scale (26-27+)
+
+**Context:** From the 26-27 season, ML ships `regularness` as the **expected starting percentage, 0–100 in multiples of 5** (was: int 1–5). Source: the LLM squad assessment for all 515 players; the community 1–5 consensus is now the validation anchor, not the data source. Distribution: 0–95, filled for all players, with real within-bucket spread (e.g. Barella 90, Dybala 65, a bench player 0).
+
+**Impact on FE: none.** `parseRegularnessValue` in `PlayerMapper.kt` already branches on the 0–100 scale (`else -> d.toInt()`), so values like 65 or 0 parse correctly as-is. The old 1–5 rescaling branch remains for backward compatibility with older data.
+
+**Display note:** values are now a true percentage — render them as-is (e.g. "65%"), without any 1–5 → % remapping. A value of `0` is a real signal (player is a bench player / not expected to start), not missing data.
+
+**Status**: informational — confirmed compatible, no action required.
 
 
