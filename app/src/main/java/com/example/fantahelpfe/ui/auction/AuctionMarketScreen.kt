@@ -350,7 +350,7 @@ fun MarketPlayerItem(
                 }
 
                 // Rating
-                Column(horizontalAlignment = Alignment.End) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("⭐️ Rating", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
                         if (player.rating > 0.0) String.format("%.2f", player.rating) else "N/A",
@@ -358,6 +358,23 @@ fun MarketPlayerItem(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+                }
+
+                // Robustness / Integrity (if available)
+                if (player.integrity != null) {
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("🏥 Robustness", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            "${player.integrity}/5",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = when {
+                                player.integrity >= 4 -> Color(0xFF388E3C)
+                                player.integrity == 3 -> Color(0xFFF57F17)
+                                else -> Color(0xFFD32F2F)
+                            }
+                        )
+                    }
                 }
             }
 

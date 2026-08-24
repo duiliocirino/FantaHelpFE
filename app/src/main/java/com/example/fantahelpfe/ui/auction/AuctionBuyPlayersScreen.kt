@@ -1024,7 +1024,7 @@ private fun PlayerExecutiveScoutingCard(
                 }
 
                 // KPI 3: Media Voto / Rating
-                Column(horizontalAlignment = Alignment.End) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         "⭐️ Rating",
                         style = MaterialTheme.typography.labelSmall,
@@ -1036,6 +1036,27 @@ private fun PlayerExecutiveScoutingCard(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+                }
+
+                // KPI 4: Physical Robustness / Integrity (if available)
+                if (player.integrity != null) {
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            "🏥 Robustness",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "${player.integrity}/5",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = when {
+                                player.integrity >= 4 -> Color(0xFF388E3C)
+                                player.integrity == 3 -> Color(0xFFF57F17)
+                                else -> Color(0xFFD32F2F)
+                            }
+                        )
+                    }
                 }
             }
 

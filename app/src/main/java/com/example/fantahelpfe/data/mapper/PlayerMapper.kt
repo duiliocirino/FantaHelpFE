@@ -12,23 +12,15 @@ private fun parseRegularnessValue(vararg values: Any?): Int {
         when (raw) {
             is Number -> {
                 val d = raw.toDouble()
-                if (d > 0.0) {
-                    return when {
-                        d <= 1.0 -> (d * 100).toInt()
-                        d <= 5.0 -> (d * 20).toInt() // 1..5 scale (1=20%, 5=100%)
-                        else -> d.toInt() // 0..100 scale
-                    }
+                if (d >= 0.0) {
+                    return if (d in 0.0..1.0 && d > 0.0) (d * 100).toInt() else d.toInt().coerceIn(0, 100)
                 }
             }
             is String -> {
                 val cleaned = raw.replace("%", "").trim().replace(",", ".")
                 val d = cleaned.toDoubleOrNull()
-                if (d != null && d > 0.0) {
-                    return when {
-                        d <= 1.0 -> (d * 100).toInt()
-                        d <= 5.0 -> (d * 20).toInt()
-                        else -> d.toInt()
-                    }
+                if (d != null && d >= 0.0) {
+                    return if (d in 0.0..1.0 && d > 0.0) (d * 100).toInt() else d.toInt().coerceIn(0, 100)
                 }
             }
         }
@@ -62,7 +54,8 @@ fun PlayerReadDto.toDomain(): Player {
         expectedPerformance = this.expectedPerformance,
         expectedStd = this.expectedStd,
         expectedPrice = this.expectedPrice,
-        age = this.age
+        age = this.age,
+        integrity = this.integrity
     )
 }
 

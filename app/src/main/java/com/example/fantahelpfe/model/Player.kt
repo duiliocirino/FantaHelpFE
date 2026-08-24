@@ -21,5 +21,6 @@ data class Player (
     val expectedPerformance: Double,
     val expectedStd: Double,
     val expectedPrice: Int,
-    val age: Int? = null
+    val age: Int? = null,
+    val integrity: Int? = null
 )
