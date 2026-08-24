@@ -962,7 +962,7 @@ private fun PlayerExecutiveScoutingCard(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                        val ageText = player.age?.let { " · $it yrs" } ?: ""
+                        val ageText = player.age?.takeIf { it > 0 }?.let { " · $it yrs" } ?: ""
                         Text(
                             "${player.squad}$ageText",
                             style = MaterialTheme.typography.bodySmall,
