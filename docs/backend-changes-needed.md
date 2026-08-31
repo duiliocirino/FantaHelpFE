@@ -13,9 +13,12 @@ The frontend audit found 3 missing fields in Read DTOs that cause Moshi deserial
 | 3 | `LeagueReadDto` missing `GoalBonusPerRole` | ✅ RESOLVED | BE added `GoalBonusPerRole` property, mapped from `League.GoalBonusPerRole` |
 | 4 & 5 | `SuggestionRequest.AuctionedPlayer` & Single-Call Contract | ✅ RESOLVED | BE merged single-call contract: `SuggestionResult` contains `score` (base optimal) and `potentialScore` (`SuggestionResult?`, potential optimal). Shared per-role DP tables. Returns `potentialScore = null` if budget is exceeded or `auctionedPlayer` is null. Integrated on FE. |
 | 6 | `GET /api/teams/{id}` Roster Inclusion | ✅ RESOLVED | BE added `.Include(t => t.TeamPlayers)` to `GET /api/teams/{id}` endpoint. Roster items map properly to `TeamReadDto.Players`. Integrated on FE. |
-| 9 | Per-format expected prices on player read endpoints | 📋 BACKLOG | 26-27+ contract: `expectedPrice`/`expectedStd` on `GET /api/players` & `GET /api/leagues/{id}/players` are reference-format (800_8) values. BE will add an optional format query param; FE to request its league's format. No FE action until implemented. |
+| 9 | Per-format expected prices on player read endpoints | 🔄 PARTIAL | The **league-scoped** endpoint is now format-aware (optional `starters` query param) and goal-bonus adjusted — see #14. The global `GET /api/players` still returns reference-format (800_8) values (no league context). |
 | 10 | `PlayerReadDto.integrity` new nullable field | ℹ️ INFO | Additive field (1–5, higher = more robust, null = unknown). Moshi-safe; FE may display it, no action required. |
 | 11 | `regularness` moves to 0–100 expected-starting-% | ℹ️ INFO | 26-27+: `regularness` is now 0–100 (multiples of 5), was int 1–5. FE's `parseRegularnessValue` (PlayerMapper.kt) already handles the 0–100 scale -- **no FE action needed**. Values like 0 (bench) and 65/90 (real spread) will appear. |
+| 12 | `StrategyWeights` in `getOptimal` + extended strategy presets | 📋 ACTION | New optional `weights` object on `SuggestionRequest` (6 knobs, 0–10; absent = legacy behavior). 8 reference presets provided (see detail below); FE to pick/arrange as it sees fit. |
+| 13 | Goal-bonus toggle UI | 📋 ACTION | `PUT /api/leagues/{id}/goal-bonus` (body `{"goalBonusPerRole": bool}`). FE already maps the flag into its `League` model; needs a settings-screen toggle. When on, engine + market tab adjust D/C values and prices. |
+| 14 | Market tab: league-adjusted prices, `starters` param, `baseExpectedPrice` | 📋 ACTION | `GET /api/leagues/{id}/players?starters=N` now returns format-resolved + goal-bonus-adjusted `expectedPrice`/`expectedStd`/`expectedPerformance`, plus new optional `baseExpectedPrice` (raw ML estimate). FE should pass the lineup total starters. See detail below. |
 
 ---
 
@@ -138,19 +141,15 @@ Return the break-even maximum bid price alongside `PotentialScore`. The FE will 
 
 ---
 
-### 9. `PlayerReadDto` — Per-Format Expected Prices (26-27+ contract)
+### 9. `PlayerReadDto` — Per-Format Expected Prices (26-27+ contract) — PARTIAL
 
-**Files**: `Fantahelp.API/Controllers/PlayersController.cs`, `Fantahelp.API/Services/PlayerService.cs`
+**Context**: From the 26-27 season, ML produces **per-format** expected prices — the BE stores them in a `PlayerPrice` table (one row per player × league format: credits + starters). The suggestion engine (`POST /api/teams/getOptimal`) resolves the league's format internally from `(League.InitialBudget, lineup total starters)` (exact match, else closest), and `SuggestionResult.SuggestedPlayers` prices are format-correct.
 
-**Context**: From the 26-27 season, ML produces **per-format** expected prices — the BE stores them in a `PlayerPrice` table (one row per player × league format: credits + starters). The suggestion engine (`POST /api/teams/getOptimal`) already resolves the league's format internally from `(League.InitialBudget, lineup total starters)` (exact match, else closest), and `SuggestionResult.SuggestedPlayers` prices are format-correct.
+**Done (league-scoped endpoint)**: `GET /api/leagues/{id}/players` now takes an optional `starters` query param and returns that league's format-resolved `expectedPrice`/`expectedStd` (same resolver as the engine; without the param, closest by credits then ascending starters). It also applies the league's goal-bonus adjustment (see #13) and exposes the raw estimate as `baseExpectedPrice` (see #14).
 
-**Current behavior**: the player read endpoints (`GET /api/players`, `GET /api/players/{id}`, `GET /api/leagues/{id}/players`) return a single **reference-format (800_8)** value in `expectedPrice`/`expectedStd` for every player, regardless of the consuming league's format.
+**Remaining**: the global endpoints (`GET /api/players`, `GET /api/players/{id}`) still return reference-format (800_8) values — they have no league context, so this is by design; the market tab uses the league-scoped endpoint and is unaffected.
 
-**Requested change**: add an optional format query parameter (e.g. `?credits=1000&starters=10`) to the player read endpoints; when present, return that format's `expectedPrice`/`expectedStd` (closest available format when no exact match). When absent, keep today's reference-format behavior for backward compatibility.
-
-**FE side**: the FE knows each league's format (budget + lineup), so it can pass it once the param lands. Until then, displayed expected prices are 800_8 values — fine for 800-credit leagues, approximate for others.
-
-**Status**: BE backlog (tracked in `FantaHelpBE/docs/FUTURE_STEPS.md`).
+**Status**: league-scoped part DONE; global endpoints intentionally left on the reference format.
 
 ---
 
@@ -173,5 +172,85 @@ Return the break-even maximum bid price alongside `PotentialScore`. The FE will 
 **Display note:** values are now a true percentage — render them as-is (e.g. "65%"), without any 1–5 → % remapping. A value of `0` is a real signal (player is a bench player / not expected to start), not missing data.
 
 **Status**: informational — confirmed compatible, no action required.
+
+---
+
+### 12. `StrategyWeights` — Personal-Preference Knobs on `POST /api/teams/getOptimal`
+
+**Context**: The scoring engine gained user-tunable weights. The objective is now:
+
+```
+Total = (StarterWeight·S + BenchWeight·B + StrategyWeight·T) / 10
+```
+
+with an optional `weights` object on the request:
+
+```jsonc
+{
+  "teamId": 1,
+  "lineUp": { "keepers": 1, "defenders": 4, "midfielders": 3, "attackers": 3 },
+  "creditsDistribution": 4,
+  "budgetAllocation": { "goalkeepers": 0.10, "defenders": 0.30, "midfielders": 0.60, "attackers": 0.60 },
+  "weights": {                       // entirely optional; absent = legacy behavior
+    "starterWeight": 6,              // 0-10, default 6  (starters block)
+    "benchWeight": 3,                // 0-10, default 3  (bench depth block)
+    "strategyWeight": 1,             // 0-10, default 1  (strategy/preferences block)
+    "squadDiversity": 2,             // 0-10, default 2  (same-club aversion)
+    "mateWeight": 1,                 // 0-10, default 1  (value of a mate on the bench)
+    "reliabilityWeight": 5           // 0-10, default 5  (regularness preference; 5 = neutral)
+  }
+}
+```
+
+**Behavior**: defaults (6/3/1 + sub-knobs) reproduce the legacy 0.6/0.3/0.1 calibration. The squad penalty is now graduated (no dead zone): each same-club player beyond the 1st in a role costs `SquadDiversity/5`, each player beyond the 3rd club-wide costs `2×` that — e.g. at the default, a 3rd same-club defender now costs, so over-representation (e.g. 3 Roma defenders) is avoidable by raising `squadDiversity`. The auction `potentialScore`/`withoutPlayerScore` inherit the weights automatically.
+
+**Reference presets** (all verified to produce distinct teams on the 26-27 data; the FE is free to use a subset, rename or add its own — every knob is 0–10):
+
+| Preset | S/B/T | SquadDiv | Mate | Rel | Character |
+|---|---|---|---|---|---|
+| **Balanced** (default) | 6/3/1 | 2 | 1 | 5 | legacy behavior; no special preference |
+| **Max Points** | 7/2/1 | 1 | 1 | 5 | pure expmf maximization, tolerates same-club clusters |
+| **Deep Bench** | 6/5/2 | 2 | 1 | 5 | prioritizes rotation depth; regulars enter the line |
+| **Full Depth** | 5/7/4 | 2 | 1 | 5 | aggressive: rebuilds the line itself for bench value |
+| **Diversified** | 6/3/1 | 5 | 1 | 5 | strong same-club aversion (saturates at 5) |
+| **Reliable** | 6/3/1 | 2 | 1 | 10 | prefers high regularness-% starters |
+| **Mate Collector** | 6/3/1 | 2 | 3 | 5 | pays for mate pairs (starter + mate on bench) |
+| **Safe (low risk)** | 5/5/3 | 5 | 1 | 10 | balanced + diversified + reliable combined |
+
+**FE side**: send `weights` from the selected preset (extend the presets in `AuctionSettingsScreen` with these knobs). Backward compatible: requests without `weights` behave exactly as before.
+
+**Status**: BE DONE; presets finalized from the trial matrix (2026-08-24).
+
+---
+
+### 13. Goal-Bonus Toggle — `PUT /api/leagues/{id}/goal-bonus`
+
+**Endpoint**: `PUT /api/leagues/{leagueId}/goal-bonus`, body `{ "goalBonusPerRole": true|false }`. Returns the updated `LeagueReadDto` (FE already maps `goalBonusPerRole` into its `League` model — item 3).
+
+**Effect when on** (the league awards the per-role goal bonus GK 6 / DEF 5 / MID 4 / ATT 3 per goal, with 3 as the base already inside `expmf`):
+- **Values**: defender expected performance ×1.02, midfielder ×1.03 (attackers/keepers unchanged) — the net bonus over the base 3.
+- **Market prices** (players being bought, in the engine *and* the league-scoped market endpoint): defenders ×1.10, midfielders ×1.05 (empirical market uplift in bonus leagues).
+- The `Score` in suggestions no longer contains a separate goal-bonus term; the adjustment is baked into values and prices.
+
+**FE side**: add a toggle in the league/settings screen that calls the endpoint and refreshes the league. The market tab and suggestions then reflect the adjusted prices automatically (no extra plumbing).
+
+**Status**: BE DONE; FE action required.
+
+---
+
+### 14. Market Tab — League-Adjusted Prices, `starters` Param, `baseExpectedPrice`
+
+**Context**: with the goal-bonus rework (#13), the league-scoped market endpoint now returns the same prices the engine scores with, so the market tab and the computed teams are consistent.
+
+**Changes on `GET /api/leagues/{id}/players`**:
+- Optional query param `starters` (lineup total, e.g. `11`): selects the price format the same way the engine does. Without it, the closest format by credits is used (deterministic tie-break, ascending starters).
+- `expectedPrice` / `expectedStd` / `expectedPerformance` are now **league-adjusted** (goal-bonus uplift when the flag is on) and **format-resolved** (previously always reference-format 800_8).
+- New optional field `baseExpectedPrice: Int?` — the raw ML estimate before the league adjustment (null on the global endpoints). Moshi-safe (additive nullable).
+
+**FE side**:
+- Pass `starters` from the current lineup setting (sum of GK+DEF+MID+ATT) when fetching league players.
+- Optionally surface `baseExpectedPrice` as a secondary line / tooltip ("base estimate 96, league price 106"). No display change is required for correctness.
+
+**Status**: BE DONE; FE action required (small).
 
 
