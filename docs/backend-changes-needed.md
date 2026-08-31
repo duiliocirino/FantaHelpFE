@@ -177,7 +177,7 @@ Return the break-even maximum bid price alongside `PotentialScore`. The FE will 
 
 ### 12. `StrategyWeights` — Personal-Preference Knobs on `POST /api/teams/getOptimal`
 
-**Context**: The scoring engine gained user-tunable weights. The objective is now:
+**Context**: The scoring engine gained user-tunable weights. The objective is:
 
 ```
 Total = (StarterWeight·S + BenchWeight·B + StrategyWeight·T) / 10
@@ -191,35 +191,50 @@ with an optional `weights` object on the request:
   "lineUp": { "keepers": 1, "defenders": 4, "midfielders": 3, "attackers": 3 },
   "creditsDistribution": 4,
   "budgetAllocation": { "goalkeepers": 0.10, "defenders": 0.30, "midfielders": 0.60, "attackers": 0.60 },
-  "weights": {                       // entirely optional; absent = legacy behavior
+  "weights": {                       // entirely optional; absent = defaults below
     "starterWeight": 6,              // 0-10, default 6  (starters block)
     "benchWeight": 3,                // 0-10, default 3  (bench depth block)
     "strategyWeight": 1,             // 0-10, default 1  (strategy/preferences block)
     "squadDiversity": 2,             // 0-10, default 2  (same-club aversion)
     "mateWeight": 1,                 // 0-10, default 1  (value of a mate on the bench)
-    "reliabilityWeight": 5           // 0-10, default 5  (regularness preference; 5 = neutral)
+    "reliabilityWeight": 10          // 0-10, default 10 (reliability discount on player value)
   }
 }
 ```
 
-**Behavior**: defaults (6/3/1 + sub-knobs) reproduce the legacy 0.6/0.3/0.1 calibration. The squad penalty is now graduated (no dead zone): each same-club player beyond the 1st in a role costs `SquadDiversity/5`, each player beyond the 3rd club-wide costs `2×` that — e.g. at the default, a 3rd same-club defender now costs, so over-representation (e.g. 3 Roma defenders) is avoidable by raising `squadDiversity`. The auction `potentialScore`/`withoutPlayerScore` inherit the weights automatically.
+**Player value (the core of the engine)**: every player is scored by their *reliable value*
+
+```
+V = expmf × (regularness/100)^(Rel/10) × (1 + 0.03·(Rel/10)·(integrity−3))   [integrity null → factor 1]
+```
+
+(expmf = expected performance **when playing** — start probability not included, by ML contract; the market price already reflects availability, so the regularness exponent converts quality into *expected contribution per fixture* without double-counting). `ReliabilityWeight` is the strength of this discount:
+- `10` (default) = full expected contribution — a reg-50 player is worth half their quality. Economically consistent with market prices.
+- `5` = tempered (square-root discount); `0` = pure quality-when-playing (overvalues irregular players).
+
+**Blocks**:
+- **S (starters)** = Σ V of the 11 starters + back-4 defense bonus (4+DEF lineups only; threshold on the base expmf, unchanged).
+- **B (bench)** = **0.5 × Σ V of the bench** (rotation factor: a bench player plays about half the fixtures). Note the scale change vs the old ratio: B is now ~35–45, not 0–4. The 0.5 keeps the S/B ratio a (weak) line-vs-bench trade-off: effective value per point is `StarterWeight/10` for the line vs `BenchWeight×0.5/10` for the bench. Verified: the ratio flips only marginal picks and saturates once `BenchWeight×0.5 ≥ StarterWeight` — the team is dominated by V itself, the T knobs, and the budget allocation.
+- **T (strategy)** = mates + graduated same-club penalty + credit spread. The old regularness term is **gone** — regularness now lives in V where it has real weight in both S and B. Squad penalty: each same-club player beyond the 1st in a role costs `SquadDiversity/5`, beyond the 3rd club-wide `2×` that.
+
+**⚠️ Behavior change vs the previous version**: requests *without* `weights` no longer reproduce the pre-rework legacy score — the default now applies the full reliability discount (Rel 10) and the new bench block. The old behavior is reachable with `reliabilityWeight: 0` (and is otherwise a different objective). Score magnitudes changed accordingly (totals ~45–55 on 26-27 data, not ~48 on the old scale). The auction `potentialScore`/`withoutPlayerScore` inherit the weights automatically.
 
 **Reference presets** (all verified to produce distinct teams on the 26-27 data; the FE is free to use a subset, rename or add its own — every knob is 0–10):
 
-| Preset | S/B/T | SquadDiv | Mate | Rel | Character |
+| Preset | S/B/T | SquadDiv | Mate | Rel | Character (verified team on 26-27) |
 |---|---|---|---|---|---|
-| **Balanced** (default) | 6/3/1 | 2 | 1 | 5 | legacy behavior; no special preference |
-| **Max Points** | 7/2/1 | 1 | 1 | 5 | pure expmf maximization, tolerates same-club clusters |
-| **Deep Bench** | 6/5/2 | 2 | 1 | 5 | prioritizes rotation depth; regulars enter the line |
-| **Full Depth** | 5/7/4 | 2 | 1 | 5 | aggressive: rebuilds the line itself for bench value |
-| **Diversified** | 6/3/1 | 5 | 1 | 5 | strong same-club aversion (saturates at 5) |
-| **Reliable** | 6/3/1 | 2 | 1 | 10 | prefers high regularness-% starters |
-| **Mate Collector** | 6/3/1 | 2 | 3 | 5 | pays for mate pairs (starter + mate on bench) |
-| **Safe (low risk)** | 5/5/3 | 5 | 1 | 10 | balanced + diversified + reliable combined |
+| **Balanced** (default) | 6/3/1 | 2 | 1 | 10 | expected-contribution optimum: Dimarco/Mancini/N'Dicka/Tiago Gabriel D line (all reg ≥ 90) |
+| **Max Points** | 7/2/1 | 1 | 1 | 0 | pure quality-when-playing: Molina/Spence/Fortini enter, S 80 vs 71.5 |
+| **Star Line** | 8/2/2 | 2 | 1 | 10 | line-biased ratio: strongest line, weaker bench (S 71.9 / B 37.5) |
+| **Deep Bench** | 4/8/2 | 2 | 1 | 10 | bench-biased ratio: marginal line credits move to the bench (Cristante enters) |
+| **Diversified** | 6/3/3 | 10 | 1 | 10 | strong same-club aversion: Vasquez replaces N'Dicka in the D line |
+| **Mate Collector** | 6/3/3 | 2 | 10 | 10 | buys ~11 mate pairs, deliberately weakens the line (S 64.8, T +35.7) |
+| **Tempered** | 6/3/1 | 2 | 1 | 5 | half-strength reliability: Molina re-enters the D line, S 74.6 |
+| **Mate & Variety** | 6/3/3 | 5 | 5 | 10 | mild mates + mild diversity mix (S 68.0, T +6.7) |
 
-**FE side**: send `weights` from the selected preset (extend the presets in `AuctionSettingsScreen` with these knobs). Backward compatible: requests without `weights` behave exactly as before.
+**FE side**: send `weights` from the selected preset (extend the presets in `AuctionSettingsScreen` with these knobs). The `Score` DTO is unchanged (starterScore / benchScore / penaltyScore / totalScore).
 
-**Status**: BE DONE; presets finalized from the trial matrix (2026-08-24).
+**Status**: BE DONE; presets finalized from the trial matrix (2026-08-24, second pass after the reliability rework).
 
 ---
 
