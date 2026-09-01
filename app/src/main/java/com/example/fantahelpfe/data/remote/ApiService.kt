@@ -1,5 +1,6 @@
 package com.example.fantahelpfe.data.remote
 
+import com.example.fantahelpfe.data.remote.dto.GoalBonusUpdateDto
 import com.example.fantahelpfe.data.remote.dto.SuggestionRequest
 import com.example.fantahelpfe.data.remote.dto.SuggestionResult
 import com.example.fantahelpfe.data.remote.dto.create.LeagueCreateDto
@@ -12,7 +13,9 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ApiService {
 
@@ -31,6 +34,9 @@ interface ApiService {
     @POST("api/leagues")
     suspend fun createLeague(@Body league: LeagueCreateDto): LeagueReadDto
 
+    @PUT("api/leagues/{id}/goal-bonus")
+    suspend fun updateGoalBonus(@Path("id") leagueId: Int, @Body body: GoalBonusUpdateDto): LeagueReadDto
+
     @POST("api/leagues/{id}/teams/{teamId}")
     suspend fun addTeamToLeague(@Path("id") leagueId: Int, @Path("teamId") teamId: Int): LeagueReadDto
 
@@ -38,7 +44,10 @@ interface ApiService {
     suspend fun createTeam(@Body team: TeamCreateDto): TeamReadDto
 
     @GET("api/leagues/{id}/players")
-    suspend fun getAvailablePlayersForLeague(@Path("id") leagueId: Int): List<PlayerReadDto>
+    suspend fun getAvailablePlayersForLeague(
+        @Path("id") leagueId: Int,
+        @Query("starters") starters: Int? = null
+    ): List<PlayerReadDto>
 
     @POST("api/teams/{id}/players")
     suspend fun addPlayerToTeam(@Path("id") teamId: Int, @Body body: TeamPlayerCreateDto): TeamReadDto

@@ -22,7 +22,8 @@ interface DataRepository {
     suspend fun createLeague(league: LeagueCreateDto): League
     suspend fun createTeam(team: TeamCreateDto): Team
     suspend fun addLeagueToTeam(leagueId: Int, teamId: Int): League
-    suspend fun getAvailablePlayersForLeague(leagueId: Int): List<Player>
+    suspend fun updateGoalBonus(leagueId: Int, goalBonusPerRole: Boolean): League
+    suspend fun getAvailablePlayersForLeague(leagueId: Int, starters: Int? = null): List<Player>
     suspend fun searchPlayer(currentLeagueId: Int, query: String): List<Player>
     suspend fun assignPlayerToTeam(teamId: Int, playerId: Int, bid: Int): Team
     suspend fun getSuggestion(potentialRequest: SuggestionRequest): List<SuggestionResult>

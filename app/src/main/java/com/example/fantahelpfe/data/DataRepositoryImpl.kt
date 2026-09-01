@@ -5,6 +5,7 @@ import com.example.fantahelpfe.data.mapper.toDomain
 import com.example.fantahelpfe.data.mapper.toDomainLeagues
 import com.example.fantahelpfe.data.mapper.toDomainPlayers
 import com.example.fantahelpfe.data.remote.ApiService
+import com.example.fantahelpfe.data.remote.dto.GoalBonusUpdateDto
 import com.example.fantahelpfe.data.remote.dto.SuggestionRequest
 import com.example.fantahelpfe.data.remote.dto.SuggestionResult
 import com.example.fantahelpfe.data.remote.dto.create.LeagueCreateDto
@@ -108,10 +109,18 @@ class DataRepositoryImpl @Inject constructor(
         return safeApiCall { apiService.createTeam(team).toDomain() }
     }
 
-    override suspend fun getAvailablePlayersForLeague(leagueId: Int): List<Player> {
+    override suspend fun updateGoalBonus(leagueId: Int, goalBonusPerRole: Boolean): League {
         return safeApiCall {
-            val dtos = apiService.getAvailablePlayersForLeague(leagueId)
-            Log.d("DataRepository", "Fetched ${dtos.size} available players for league $leagueId. Sample DTO: ${dtos.firstOrNull()}")
+            val updatedDto = apiService.updateGoalBonus(leagueId, GoalBonusUpdateDto(goalBonusPerRole))
+            clearCache()
+            updatedDto.toDomain()
+        }
+    }
+
+    override suspend fun getAvailablePlayersForLeague(leagueId: Int, starters: Int?): List<Player> {
+        return safeApiCall {
+            val dtos = apiService.getAvailablePlayersForLeague(leagueId, starters)
+            Log.d("DataRepository", "Fetched ${dtos.size} available players for league $leagueId with starters=$starters. Sample DTO: ${dtos.firstOrNull()}")
             dtos.toDomainPlayers()
         }
     }

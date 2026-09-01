@@ -7,4 +7,7 @@ data class LineUp(
     @Json(name = "defenders") val defenders: Int,
     @Json(name = "midfielders") val midfielders: Int,
     @Json(name = "attackers") val attackers: Int
-)
+) {
+    val totalStarters: Int
+        get() = keepers + defenders + midfielders + attackers
+}

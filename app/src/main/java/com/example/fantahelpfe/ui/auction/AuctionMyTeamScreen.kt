@@ -25,6 +25,7 @@ import com.example.fantahelpfe.model.PlayerRole
 import com.example.fantahelpfe.model.TeamPlayer
 import com.example.fantahelpfe.ui.components.ErrorState
 import com.example.fantahelpfe.ui.components.LoadingState
+import com.example.fantahelpfe.ui.components.RoleSpendingDistributionCard
 import com.example.fantahelpfe.utils.capitalizeFirstLetter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -93,9 +94,7 @@ fun AuctionMyTeamScreen(
         )
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { paddingValues ->
+    Box(modifier = Modifier.fillMaxSize()) {
         if (uiState.isLoading) {
             LoadingState()
         } else if (uiState.error != null) {
@@ -103,8 +102,7 @@ fun AuctionMyTeamScreen(
         } else {
             Column(
                 modifier = Modifier
-                    .padding(paddingValues)
-                    .padding(16.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
                     .fillMaxSize()
             ) {
                 // Team Selector (Horizontal Scrollable for N-Teams)
@@ -264,63 +262,81 @@ fun AuctionMyTeamScreen(
                                 val midList = remember(team.players) { team.players.filter { it.playerRole == PlayerRole.C } }
                                 val attList = remember(team.players) { team.players.filter { it.playerRole == PlayerRole.A } }
 
-                                LazyColumn(
-                                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    if (gkList.isNotEmpty()) {
-                                        item { RoleGroupHeader("🧤 Goalkeepers", gkList.size, Color(0xFFFFB74D)) }
-                                        items(gkList, key = { it.playerId }) { teamPlayer ->
-                                            TeamPlayerItem(
-                                                teamPlayer = teamPlayer,
-                                                fullPlayer = uiState.allPlayersMap[teamPlayer.playerId],
-                                                onClick = {
-                                                    inspectedPlayer = teamPlayer to uiState.allPlayersMap[teamPlayer.playerId]
-                                                },
-                                                onRemove = { removeConfirmationPlayer = teamPlayer }
-                                            )
-                                        }
-                                    }
+                                val currentGkSpend = remember(team.players) { gkList.sumOf { it.auctionPrice } }
+                                val currentDefSpend = remember(team.players) { defList.sumOf { it.auctionPrice } }
+                                val currentMidSpend = remember(team.players) { midList.sumOf { it.auctionPrice } }
+                                val currentAttSpend = remember(team.players) { attList.sumOf { it.auctionPrice } }
 
-                                    if (defList.isNotEmpty()) {
-                                        item { RoleGroupHeader("🛡️ Defenders", defList.size, Color(0xFF64B5F6)) }
-                                        items(defList, key = { it.playerId }) { teamPlayer ->
-                                            TeamPlayerItem(
-                                                teamPlayer = teamPlayer,
-                                                fullPlayer = uiState.allPlayersMap[teamPlayer.playerId],
-                                                onClick = {
-                                                    inspectedPlayer = teamPlayer to uiState.allPlayersMap[teamPlayer.playerId]
-                                                },
-                                                onRemove = { removeConfirmationPlayer = teamPlayer }
-                                            )
-                                        }
-                                    }
+                                Column(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                                    RoleSpendingDistributionCard(
+                                        title = "📊 Current Squad Spending Shares",
+                                        gkSpend = currentGkSpend,
+                                        defSpend = currentDefSpend,
+                                        midSpend = currentMidSpend,
+                                        attSpend = currentAttSpend,
+                                        totalSpend = totalSpent
+                                    )
 
-                                    if (midList.isNotEmpty()) {
-                                        item { RoleGroupHeader("🎯 Midfielders", midList.size, Color(0xFF81C784)) }
-                                        items(midList, key = { it.playerId }) { teamPlayer ->
-                                            TeamPlayerItem(
-                                                teamPlayer = teamPlayer,
-                                                fullPlayer = uiState.allPlayersMap[teamPlayer.playerId],
-                                                onClick = {
-                                                    inspectedPlayer = teamPlayer to uiState.allPlayersMap[teamPlayer.playerId]
-                                                },
-                                                onRemove = { removeConfirmationPlayer = teamPlayer }
-                                            )
-                                        }
-                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
 
-                                    if (attList.isNotEmpty()) {
-                                        item { RoleGroupHeader("🚀 Attackers", attList.size, Color(0xE5E57373)) }
-                                        items(attList, key = { it.playerId }) { teamPlayer ->
-                                            TeamPlayerItem(
-                                                teamPlayer = teamPlayer,
-                                                fullPlayer = uiState.allPlayersMap[teamPlayer.playerId],
-                                                onClick = {
-                                                    inspectedPlayer = teamPlayer to uiState.allPlayersMap[teamPlayer.playerId]
-                                                },
-                                                onRemove = { removeConfirmationPlayer = teamPlayer }
-                                            )
+                                    LazyColumn(
+                                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        if (gkList.isNotEmpty()) {
+                                            item { RoleGroupHeader("🧤 Goalkeepers", gkList.size, Color(0xFFFFB74D)) }
+                                            items(gkList, key = { it.playerId }) { teamPlayer ->
+                                                TeamPlayerItem(
+                                                    teamPlayer = teamPlayer,
+                                                    fullPlayer = uiState.allPlayersMap[teamPlayer.playerId],
+                                                    onClick = {
+                                                        inspectedPlayer = teamPlayer to uiState.allPlayersMap[teamPlayer.playerId]
+                                                    },
+                                                    onRemove = { removeConfirmationPlayer = teamPlayer }
+                                                )
+                                            }
+                                        }
+
+                                        if (defList.isNotEmpty()) {
+                                            item { RoleGroupHeader("🛡️ Defenders", defList.size, Color(0xFF64B5F6)) }
+                                            items(defList, key = { it.playerId }) { teamPlayer ->
+                                                TeamPlayerItem(
+                                                    teamPlayer = teamPlayer,
+                                                    fullPlayer = uiState.allPlayersMap[teamPlayer.playerId],
+                                                    onClick = {
+                                                        inspectedPlayer = teamPlayer to uiState.allPlayersMap[teamPlayer.playerId]
+                                                    },
+                                                    onRemove = { removeConfirmationPlayer = teamPlayer }
+                                                )
+                                            }
+                                        }
+
+                                        if (midList.isNotEmpty()) {
+                                            item { RoleGroupHeader("🎯 Midfielders", midList.size, Color(0xFF81C784)) }
+                                            items(midList, key = { it.playerId }) { teamPlayer ->
+                                                TeamPlayerItem(
+                                                    teamPlayer = teamPlayer,
+                                                    fullPlayer = uiState.allPlayersMap[teamPlayer.playerId],
+                                                    onClick = {
+                                                        inspectedPlayer = teamPlayer to uiState.allPlayersMap[teamPlayer.playerId]
+                                                    },
+                                                    onRemove = { removeConfirmationPlayer = teamPlayer }
+                                                )
+                                            }
+                                        }
+
+                                        if (attList.isNotEmpty()) {
+                                            item { RoleGroupHeader("🚀 Attackers", attList.size, Color(0xE5E57373)) }
+                                            items(attList, key = { it.playerId }) { teamPlayer ->
+                                                TeamPlayerItem(
+                                                    teamPlayer = teamPlayer,
+                                                    fullPlayer = uiState.allPlayersMap[teamPlayer.playerId],
+                                                    onClick = {
+                                                        inspectedPlayer = teamPlayer to uiState.allPlayersMap[teamPlayer.playerId]
+                                                    },
+                                                    onRemove = { removeConfirmationPlayer = teamPlayer }
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -346,7 +362,13 @@ fun AuctionMyTeamScreen(
                                     val domainSuggestedPlayers = result.suggestedPlayers.toDomainPlayers()
                                     val currentRosterPlayerIds = team.players.map { it.playerId }.toSet()
 
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                    val optGkSpend = remember(domainSuggestedPlayers) { domainSuggestedPlayers.filter { it.role == PlayerRole.P }.sumOf { if (it.expectedPrice > 0) it.expectedPrice else it.price } }
+                                    val optDefSpend = remember(domainSuggestedPlayers) { domainSuggestedPlayers.filter { it.role == PlayerRole.D }.sumOf { if (it.expectedPrice > 0) it.expectedPrice else it.price } }
+                                    val optMidSpend = remember(domainSuggestedPlayers) { domainSuggestedPlayers.filter { it.role == PlayerRole.C }.sumOf { if (it.expectedPrice > 0) it.expectedPrice else it.price } }
+                                    val optAttSpend = remember(domainSuggestedPlayers) { domainSuggestedPlayers.filter { it.role == PlayerRole.A }.sumOf { if (it.expectedPrice > 0) it.expectedPrice else it.price } }
+                                    val optTotalSpend = remember(domainSuggestedPlayers) { (optGkSpend + optDefSpend + optMidSpend + optAttSpend).coerceAtLeast(1) }
+
+                                    Spacer(modifier = Modifier.height(10.dp))
 
                                     // Score Breakdown Card
                                     Card(
@@ -380,6 +402,18 @@ fun AuctionMyTeamScreen(
                                             }
                                         }
                                     }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    // Role Spending Allocation Breakdown Card
+                                    RoleSpendingDistributionCard(
+                                        title = "📊 Optimal Roster Spending Shares",
+                                        gkSpend = optGkSpend,
+                                        defSpend = optDefSpend,
+                                        midSpend = optMidSpend,
+                                        attSpend = optAttSpend,
+                                        totalSpend = optTotalSpend
+                                    )
 
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text("Suggested Roster (${domainSuggestedPlayers.size} Players)", style = MaterialTheme.typography.titleSmall)
@@ -427,6 +461,10 @@ fun AuctionMyTeamScreen(
                 }
             }
         }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
 
@@ -602,6 +640,7 @@ fun PlayerInspectorDialog(
 
                             val expPrice = player?.expectedPrice ?: 0
                             val stdVal = player?.expectedStd ?: 0.0
+                            val basePrice = player?.baseExpectedPrice
                             Column(horizontalAlignment = if (isAcquired) Alignment.CenterHorizontally else Alignment.Start) {
                                 Text("🤖 ML Fair Value", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(
@@ -610,6 +649,9 @@ fun PlayerInspectorDialog(
                                     fontWeight = FontWeight.Bold,
                                     color = if (!isAcquired) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                 )
+                                if (basePrice != null && basePrice > 0 && basePrice != expPrice) {
+                                    Text("Raw: $basePrice CR", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                                }
                             }
 
                             if (player != null && player.fvm > 0) {

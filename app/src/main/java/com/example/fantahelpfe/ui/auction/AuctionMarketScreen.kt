@@ -42,13 +42,11 @@ fun AuctionMarketScreen(
     val midCount = remember(uiState.availablePlayers) { uiState.availablePlayers.count { it.role.name.equals("C", ignoreCase = true) } }
     val attCount = remember(uiState.availablePlayers) { uiState.availablePlayers.count { it.role.name.equals("A", ignoreCase = true) } }
 
-    Scaffold { paddingValues ->
-        Column(
-            modifier = Modifier
-                .padding(paddingValues)
-                .padding(16.dp)
-                .fillMaxSize()
-        ) {
+    Column(
+        modifier = Modifier
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .fillMaxSize()
+    ) {
             // Market Overview KPI Summary Header Banner
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -241,7 +239,6 @@ fun AuctionMarketScreen(
             }
         }
     }
-}
 
 @Composable
 private fun RoleCountPill(label: String, count: Int, color: Color, modifier: Modifier = Modifier) {
@@ -395,6 +392,7 @@ fun MarketPlayerItem(
                 ) {
                     val expPrice = if (player.expectedPrice > 0) player.expectedPrice else player.price
                     val stdVal = player.expectedStd
+                    val basePrice = player.baseExpectedPrice
                     Column {
                         Text("🤖 Exp. Price Range", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -404,6 +402,14 @@ fun MarketPlayerItem(
                                     String.format(" (±%.0f)", stdVal),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            if (basePrice != null && basePrice > 0 && basePrice != expPrice) {
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    "Base: $basePrice",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.tertiary
                                 )
                             }
                         }

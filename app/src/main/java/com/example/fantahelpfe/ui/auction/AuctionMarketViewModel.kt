@@ -84,7 +84,8 @@ class AuctionMarketViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val players = repository.getAvailablePlayersForLeague(leagueId)
+                val startersCount = auctionSessionManager.settings.value.lineUp.totalStarters
+                val players = repository.getAvailablePlayersForLeague(leagueId, starters = startersCount)
                 _uiState.update { state ->
                     state.copy(
                         availablePlayers = players,

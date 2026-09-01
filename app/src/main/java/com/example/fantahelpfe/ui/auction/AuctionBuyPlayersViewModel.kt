@@ -342,7 +342,8 @@ class AuctionBuyPlayersViewModel @Inject constructor(
                         playerId = playerToConsider.id,
                         acquisitionPrice = bidForPlayer
                     ),
-                    budgetAllocation = settings.budgetAllocation
+                    budgetAllocation = settings.budgetAllocation,
+                    weights = settings.strategyWeights
                 )
 
                 val results = repository.getSuggestion(potentialRequest)

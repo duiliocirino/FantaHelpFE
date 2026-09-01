@@ -9,5 +9,6 @@ data class SuggestionRequest(
     @Json(name = "lineUp") val lineUp: LineUp,
     @Json(name = "creditsDistribution") val creditsDistribution: Int = 1,
     @Json(name = "auctionedPlayer") val auctionedPlayer: AuctionedPlayerInfo? = null,
-    @Json(name = "budgetAllocation") val budgetAllocation: BudgetAllocation? = null
+    @Json(name = "budgetAllocation") val budgetAllocation: BudgetAllocation? = null,
+    @Json(name = "weights") val weights: StrategyWeights? = null
 )

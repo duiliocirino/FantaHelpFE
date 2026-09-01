@@ -7,6 +7,7 @@ import com.example.fantahelpfe.data.AuctionSettings
 import com.example.fantahelpfe.data.DataRepository
 import com.example.fantahelpfe.data.remote.dto.BudgetAllocation
 import com.example.fantahelpfe.data.remote.dto.LineUp
+import com.example.fantahelpfe.data.remote.dto.StrategyWeights
 import com.example.fantahelpfe.model.League
 import com.example.fantahelpfe.model.Player
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -72,8 +73,30 @@ class AuctionSharedViewModel @Inject constructor(
         auctionSessionManager.updateCreditsDistributionMultiplier(multiplier)
     }
 
+    fun updateBudgetAllocation(budgetAllocation: BudgetAllocation) {
+        auctionSessionManager.updateBudgetAllocation(budgetAllocation)
+    }
+
     fun updateCreditsDistributionStrategy(multiplier: Int, budgetAllocation: BudgetAllocation) {
         auctionSessionManager.updateCreditsDistributionStrategy(multiplier, budgetAllocation)
+    }
+
+    fun updateStrategyPreset(
+        presetName: String,
+        weights: StrategyWeights,
+        spreadPenalty: Int,
+        budgetAllocation: BudgetAllocation
+    ) {
+        auctionSessionManager.updateStrategyPreset(presetName, weights, spreadPenalty, budgetAllocation)
+    }
+
+    fun updateStrategyWeights(weights: StrategyWeights) {
+        auctionSessionManager.updateStrategyWeights(weights)
+    }
+
+    fun toggleGoalBonus(enabled: Boolean) {
+        val leagueId = currentLeagueId.value ?: return
+        auctionSessionManager.toggleGoalBonus(leagueId, enabled)
     }
 
     fun updateLineUp(lineUp: LineUp) {

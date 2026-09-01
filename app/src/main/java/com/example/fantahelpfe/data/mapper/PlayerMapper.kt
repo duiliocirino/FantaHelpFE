@@ -43,6 +43,21 @@ private fun parseAgeValue(vararg values: Any?): Int? {
     return null
 }
 
+private fun parsePriceValue(vararg values: Any?): Int? {
+    for (raw in values) {
+        if (raw == null) continue
+        val num = when (raw) {
+            is Number -> raw.toInt()
+            is String -> raw.trim().toDoubleOrNull()?.toInt()
+            else -> null
+        }
+        if (num != null && num >= 0) {
+            return num
+        }
+    }
+    return null
+}
+
 fun PlayerReadDto.toDomain(): Player {
     val parsedRegularness = parseRegularnessValue(
         this.regularity,
@@ -51,6 +66,7 @@ fun PlayerReadDto.toDomain(): Player {
         this.titolaritaPercentage
     )
     val parsedAge = parseAgeValue(this.age, this.eta, this.anni)
+    val parsedBaseExpectedPrice = parsePriceValue(this.baseExpectedPrice)
 
     return Player(
         id = this.id,
@@ -71,7 +87,8 @@ fun PlayerReadDto.toDomain(): Player {
         expectedStd = this.expectedStd,
         expectedPrice = this.expectedPrice,
         age = parsedAge,
-        integrity = this.integrity
+        integrity = this.integrity,
+        baseExpectedPrice = parsedBaseExpectedPrice
     )
 }
 

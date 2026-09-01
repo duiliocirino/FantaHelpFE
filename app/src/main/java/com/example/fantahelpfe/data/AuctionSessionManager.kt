@@ -3,6 +3,7 @@ package com.example.fantahelpfe.data
 import android.util.Log
 import com.example.fantahelpfe.data.remote.dto.BudgetAllocation
 import com.example.fantahelpfe.data.remote.dto.LineUp
+import com.example.fantahelpfe.data.remote.dto.StrategyWeights
 import com.example.fantahelpfe.model.League
 import com.example.fantahelpfe.model.Player
 import kotlinx.coroutines.CoroutineScope
@@ -98,7 +99,22 @@ class AuctionSessionManager @Inject constructor(
     }
 
     fun updateCreditsDistributionMultiplier(multiplier: Int) {
-        _settings.update { it.copy(creditsDistributionMultiplier = multiplier.coerceIn(0, 20)) }
+        _settings.update {
+            it.copy(
+                creditsDistributionMultiplier = multiplier.coerceIn(0, 20),
+                selectedPresetName = "Custom"
+            )
+        }
+        saveSettings()
+    }
+
+    fun updateBudgetAllocation(budgetAllocation: BudgetAllocation) {
+        _settings.update {
+            it.copy(
+                budgetAllocation = budgetAllocation,
+                selectedPresetName = "Custom"
+            )
+        }
         saveSettings()
     }
 
@@ -106,10 +122,51 @@ class AuctionSessionManager @Inject constructor(
         _settings.update {
             it.copy(
                 creditsDistributionMultiplier = multiplier.coerceIn(0, 20),
+                budgetAllocation = budgetAllocation,
+                selectedPresetName = "Custom"
+            )
+        }
+        saveSettings()
+    }
+
+    fun updateStrategyPreset(
+        presetName: String,
+        weights: StrategyWeights,
+        spreadPenalty: Int,
+        budgetAllocation: BudgetAllocation
+    ) {
+        _settings.update {
+            it.copy(
+                selectedPresetName = presetName,
+                strategyWeights = weights,
+                creditsDistributionMultiplier = spreadPenalty.coerceIn(0, 20),
                 budgetAllocation = budgetAllocation
             )
         }
         saveSettings()
+    }
+
+    fun updateStrategyWeights(weights: StrategyWeights) {
+        _settings.update {
+            it.copy(
+                strategyWeights = weights,
+                selectedPresetName = "Custom"
+            )
+        }
+        saveSettings()
+    }
+
+    fun toggleGoalBonus(leagueId: Int, enabled: Boolean) {
+        managerScope.launch {
+            try {
+                val updatedLeague = repository.updateGoalBonus(leagueId, enabled)
+                _leagueDetails.update { updatedLeague }
+                refreshAll()
+                Log.d("AuctionSessionManager", "Successfully updated goal bonus to $enabled for league $leagueId")
+            } catch (e: Exception) {
+                Log.e("AuctionSessionManager", "Error updating goal bonus: ${e.message}")
+            }
+        }
     }
 
     fun updateLineUp(lineUp: LineUp) {

@@ -20,5 +20,6 @@ data class PlayerReadDto(
     @Json(name = "age") val age: Any? = null,
     @Json(name = "eta") val eta: Any? = null,
     @Json(name = "anni") val anni: Any? = null,
-    @Json(name = "integrity") val integrity: Int? = null
+    @Json(name = "integrity") val integrity: Int? = null,
+    @Json(name = "baseExpectedPrice") val baseExpectedPrice: Any? = null
 )

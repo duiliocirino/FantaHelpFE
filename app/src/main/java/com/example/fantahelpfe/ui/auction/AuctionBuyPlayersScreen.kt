@@ -32,6 +32,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.fantahelpfe.data.remote.dto.Score
 import com.example.fantahelpfe.data.remote.dto.read.PlayerReadDto
+import com.example.fantahelpfe.ui.components.RoleSpendingDistributionCard
 import com.example.fantahelpfe.utils.capitalizeFirstLetter
 import kotlinx.coroutines.delay
 
@@ -63,11 +64,10 @@ fun AuctionBuyPlayersScreen(
 
     val scrollState = rememberScrollState()
 
-    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { paddingValues ->
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
-                .padding(paddingValues)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
                 .fillMaxSize()
                 .verticalScroll(scrollState)
         ) {
@@ -441,7 +441,11 @@ fun AuctionBuyPlayersScreen(
             )
         }
     }
-    }
+    SnackbarHost(
+        hostState = snackbarHostState,
+        modifier = Modifier.align(Alignment.BottomCenter)
+    )
+}
 }
 
 @Composable
@@ -694,6 +698,22 @@ fun HybridExecutiveDashboardCard(
                             val (startersList, benchList) = remember(activePlayerList, uiState.targetLineUp) {
                                 partitionStartersAndBench(activePlayerList, uiState.targetLineUp)
                             }
+
+                            val gkSpend = remember(activePlayerList) { activePlayerList.filter { it.role.equals("P", ignoreCase = true) }.sumOf { if (it.expectedPrice > 0) it.expectedPrice else it.price } }
+                            val defSpend = remember(activePlayerList) { activePlayerList.filter { it.role.equals("D", ignoreCase = true) }.sumOf { if (it.expectedPrice > 0) it.expectedPrice else it.price } }
+                            val midSpend = remember(activePlayerList) { activePlayerList.filter { it.role.equals("C", ignoreCase = true) }.sumOf { if (it.expectedPrice > 0) it.expectedPrice else it.price } }
+                            val attSpend = remember(activePlayerList) { activePlayerList.filter { it.role.equals("A", ignoreCase = true) }.sumOf { if (it.expectedPrice > 0) it.expectedPrice else it.price } }
+                            val totalRosterSpend = remember(activePlayerList) { (gkSpend + defSpend + midSpend + attSpend).coerceAtLeast(1) }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+                            RoleSpendingDistributionCard(
+                                title = "📊 Suggested Roster Spending Shares",
+                                gkSpend = gkSpend,
+                                defSpend = defSpend,
+                                midSpend = midSpend,
+                                attSpend = attSpend,
+                                totalSpend = totalRosterSpend
+                            )
 
                             if (startersList.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(8.dp))
